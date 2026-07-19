@@ -11,11 +11,11 @@ DC.views.rewards = (() => {
 
   /* ── Spin wheel config ──────────────────────────────────── */
   const SEGMENTS = [
-    { label: "$100", emoji: "💵", color: "#c0392b", weight: 18, apply: () => { S.earnCash(100); return "+$100 DopaCash"; } },
+    { label: "SAR 400", emoji: "💵", color: "#c0392b", weight: 18, apply: () => { S.earnCash(400); return "+SAR 400 DopaCash"; } },
     { label: "25🪙", emoji: "🪙", color: "#8e44ad", weight: 16, apply: () => { S.earnCoins(25); return "+25 coins"; } },
     { label: "100XP", emoji: "⭐", color: "#2980b9", weight: 15, apply: () => { S.addXP(100); return "+100 XP"; } },
     { label: "25%", emoji: "🏷️", color: "#16a085", weight: 12, apply: () => "Coupon LUCKY25 — use it at checkout!" },
-    { label: "$500", emoji: "💰", color: "#f39c12", weight: 4, apply: () => { S.earnCash(500); return "JACKPOT! +$500 DopaCash"; } },
+    { label: "SAR 2,000", emoji: "💰", color: "#f39c12", weight: 4, apply: () => { S.earnCash(2000); return "JACKPOT! +SAR 2,000 DopaCash"; } },
     { label: "+1🎡", emoji: "🎡", color: "#d35400", weight: 10, apply: () => { S.s.spins += 1; S.save(); return "+1 extra spin"; } },
     { label: "50🪙", emoji: "🪙", color: "#27ae60", weight: 14, apply: () => { S.earnCoins(50); return "+50 coins"; } },
     { label: "40XP", emoji: "✨", color: "#7f8c8d", weight: 11, apply: () => { S.addXP(40); return "+40 XP"; } },
@@ -58,7 +58,7 @@ DC.views.rewards = (() => {
       <div class="level-title">${S.levelTitle(lv.level)}</div>
       <div class="xp-bar" style="height:7px"><i style="width:${Math.round(lv.pct * 100)}%"></i></div>
       <div class="level-xp">${U.num(lv.into)} / ${U.num(lv.need)} XP to level ${lv.level + 1}
-        · rewards: $${100 * (lv.level + 1)} + ${25 * (lv.level + 1)}🪙 + 1 spin</div>
+        · rewards: SAR ${400 * (lv.level + 1)} + ${25 * (lv.level + 1)}🪙 + 1 spin</div>
     </div>
 
     <div class="wallet-row">
@@ -162,7 +162,7 @@ DC.views.rewards = (() => {
 
   /* ── Mystery box ────────────────────────────────────────── */
   const BOX_REWARDS = [
-    { weight: 30, gen: () => { const v = 150 + Math.floor(Math.random() * 10) * 50; S.earnCash(v); return { e: "💵", t: `$${v} DopaCash` }; } },
+    { weight: 30, gen: () => { const v = 600 + Math.floor(Math.random() * 10) * 200; S.earnCash(v); return { e: "💵", t: `SAR ${v.toLocaleString()} DopaCash` }; } },
     { weight: 28, gen: () => { const v = 40 + Math.floor(Math.random() * 12) * 10; S.earnCoins(v); return { e: "🪙", t: `${v} coins` }; } },
     { weight: 24, gen: () => { const v = 80 + Math.floor(Math.random() * 13) * 10; S.addXP(v); return { e: "⭐", t: `${v} XP` }; } },
     { weight: 18, gen: () => { S.s.spins += 1; S.save(); return { e: "🎡", t: "an extra spin" }; } },
@@ -200,8 +200,8 @@ DC.views.rewards = (() => {
     "level-5": "Reach level 5.", "level-10": "Reach level 10.",
     "streak-3": "Claim your daily reward 3 days in a row.",
     "streak-7": "Keep a 7-day streak alive.",
-    "big-spender": "Spend $10,000 total DopaCash.",
-    "high-roller": "Place a single order worth $2,000+.",
+    "big-spender": "Spend SAR 40,000 total DopaCash.",
+    "high-roller": "Place a single order worth SAR 7,500+.",
     "spin-master": "Spin the wheel 5 times.",
     unboxer: "Open 3 mystery boxes.",
     completionist: "Order from 5 different categories.",

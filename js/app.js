@@ -114,7 +114,7 @@ DC.app = (() => {
         <h2 style="letter-spacing:-0.02em">Level Up!</h2>
         <p class="muted" style="margin:4px 0 4px">You are now a</p>
         <div class="reward-amount" style="font-size:22px">${S.levelTitle(level)}</div>
-        <p class="tiny muted" style="margin-bottom:16px">+$${100 * level} · +${25 * level} coins · +1 spin 🎡</p>
+        <p class="tiny muted" style="margin-bottom:16px">+SAR ${400 * level} · +${25 * level} coins · +1 spin 🎡</p>
         <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Let's go</button>
       `, "dialog");
     };
@@ -130,11 +130,11 @@ DC.app = (() => {
     UI.modal(`
       <div class="reward-burst">🔥</div>
       <h3 style="margin:6px 0 2px">Day ${r.streak} streak!</h3>
-      <div class="reward-amount">+$${r.cash}</div>
+      <div class="reward-amount">+SAR ${r.cash.toLocaleString()}</div>
       <p class="muted" style="font-size:13.5px;margin-bottom:16px">+${r.coins} coins · +50 XP<br>Streak bonus grows every day.</p>
       <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Claim 🎉</button>
     `, "dialog");
-    S.pushNotif("🎁", "Daily reward claimed", `Day ${r.streak} — $${r.cash} + ${r.coins} coins`, true);
+    S.pushNotif("🎁", "Daily reward claimed", `Day ${r.streak} — SAR ${r.cash} + ${r.coins} coins`, true);
   };
 
   const openNotifs = () => {
@@ -345,7 +345,7 @@ DC.app = (() => {
     // Welcome-back economy
     const away = S.collectAwayEarnings();
     if (away > 0) {
-      setTimeout(() => U.toast("Welcome back!", `You earned $${away} while away 💤`, "💵"), 1400);
+      setTimeout(() => U.toast("Welcome back!", `You earned SAR ${away.toLocaleString()} while away 💤`, "💵"), 1400);
     }
     if (S.grantDailySpin()) {
       setTimeout(() => U.toast("Free daily spin added!", "Visit Rewards to use it", "🎡"), 2600);
@@ -363,7 +363,7 @@ DC.app = (() => {
             not the products, not the prices, not the deliveries.
           </p>
           <p class="muted" style="font-size:14px;line-height:1.6;margin-bottom:16px">
-            You start with <b style="color:var(--text)">$5,000 DopaCash</b>. Spend it, track fake
+            You start with <b style="color:var(--text)">SAR 20,000 DopaCash</b>. Spend it, track fake
             couriers, level up, and unlock rewards. Pure dopamine, zero consequences.
           </p>
           <button class="btn btn-primary btn-block" data-action="close-modal">Let's shop 🛍️</button>

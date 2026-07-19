@@ -32,6 +32,14 @@ DC.ui = (() => {
   const gradStyle = (p) =>
     `background:linear-gradient(140deg,${p.grad[0]},${p.grad[1]})`;
 
+  // Real product photo layered over the gradient tile. If the image
+  // fails (offline, hotlink blocked), it removes itself and the
+  // emoji art underneath takes over.
+  const photoHtml = (p) =>
+    p.img
+      ? `<img class="p-photo" src="${p.img}" alt="" loading="lazy" onerror="this.remove()">`
+      : "";
+
   const stars = (rating) => "★".repeat(Math.round(rating));
 
   const badgeHtml = (p) => {
@@ -58,6 +66,7 @@ DC.ui = (() => {
       <div class="p-img" style="${gradStyle(p)}">
         ${badgeHtml(p)}${favBtn(p)}
         <span class="p-emoji">${p.emoji}</span>
+        ${photoHtml(p)}
       </div>
       <div class="p-body">
         <div class="p-name">${U.esc(p.name)}</div>
@@ -81,7 +90,7 @@ DC.ui = (() => {
     const pr = priceOf(p);
     return `
     <article class="prod-line" data-action="open-product" data-id="${p.id}">
-      <div class="p-img" style="${gradStyle(p)}"><span class="p-emoji">${p.emoji}</span></div>
+      <div class="p-img" style="${gradStyle(p)}"><span class="p-emoji">${p.emoji}</span>${photoHtml(p)}</div>
       <div class="info">
         <div class="p-name">${U.esc(p.name)}</div>
         <div class="p-meta">
@@ -185,7 +194,7 @@ DC.ui = (() => {
   };
 
   return {
-    priceOf, gradStyle, stars, favBtn,
+    priceOf, gradStyle, stars, favBtn, photoHtml,
     productCard, productLine, row, grid, section,
     skRow, skGrid, skHome,
     modal, closeModal, flyToCart,

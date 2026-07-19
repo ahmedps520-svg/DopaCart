@@ -7,7 +7,7 @@
 
 // Bump this version whenever any precached file changes — it is what
 // triggers installed clients to fetch the new build.
-const CACHE = "dopacart-v1.0.1";
+const CACHE = "dopacart-v1.1.0";
 
 const ASSETS = [
   "./",

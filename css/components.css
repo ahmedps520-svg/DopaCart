@@ -219,8 +219,22 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(120% 60% at 50% -10%, rgba(255, 255, 255, 0.22), transparent 55%);
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(255, 255, 255, 0.14), transparent 55%);
 }
+
+/* Real product photo layered over the gradient tile */
+.p-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  animation: photo-in 0.4s ease;
+}
+@keyframes photo-in { from { opacity: 0; } }
 .p-img .p-emoji { filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.45)); transition: transform 0.3s var(--ease-spring); }
 .prod-card:active .p-emoji { transform: scale(1.15) rotate(-6deg); }
 
@@ -337,9 +351,30 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(120% 55% at 50% -5%, rgba(255, 255, 255, 0.25), transparent 55%);
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(120% 55% at 50% -5%, rgba(255, 255, 255, 0.14), transparent 55%);
 }
 .pd-hero .p-emoji { filter: drop-shadow(0 22px 30px rgba(0, 0, 0, 0.5)); animation: float-y 4.5s ease-in-out infinite; }
+
+.pd-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  animation: photo-in 0.4s ease;
+}
+
+.pd-thumb { position: relative; overflow: hidden; padding: 0; }
+.pd-thumb .thumb-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .pd-gallery { display: flex; gap: 8px; margin-top: 10px; }
 .pd-thumb {

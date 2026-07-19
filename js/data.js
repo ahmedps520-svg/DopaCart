@@ -1,44 +1,52 @@
 /* ═══════════════════════════════════════════════════════════════
    DopaCart — data.js
-   The entire fictional marketplace: categories, products,
-   coupons, drivers, review generators. Nothing here is real.
+   The marketplace catalog: categories, products, coupons,
+   drivers, review generators. Prices are in Saudi Riyals (SAR).
+   Product names reference real brands for flavor; nothing is
+   actually sold and no order is real. Product photos are
+   hotlinked from their sources (see Credits in Settings).
    ═══════════════════════════════════════════════════════════════ */
 
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.0.0";
+  const VERSION = "1.1.0";
+
+  /* Image URL helpers */
+  const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
+  const wm = (path) => `https://upload.wikimedia.org/wikipedia/commons/${path}`;
+  const based = (file) => `https://cdn.shopify.com/s/files/1/0666/0125/5141/files/${file}`;
 
   /* ── Categories ─────────────────────────────────────────── */
-  // grad: banner gradient · pal: product-image gradients (cycled)
+  // grad: banner gradient · pal: fallback card gradients (cycled)
   const CATEGORIES = [
     {
       id: "gaming", name: "Gaming", emoji: "🎮", tagline: "Level up your setup",
       grad: ["#2b0a3d", "#c81d5e"],
       pal: [["#31104f", "#7a2ce0"], ["#0e2a52", "#2f6bff"], ["#3d0f24", "#e0356b"], ["#101c3a", "#5e5ce6"]],
       subs: ["PC Gaming", "PlayStation", "Xbox", "Nintendo", "Sim Racing", "VR", "Streaming", "Accessories"],
-      boiler: "Engineered for the obsessed. Tuned, tested, and tournament-approved by people who definitely should go outside more.",
+      boiler: "Tournament-grade gear for people who take 'one more game' very literally.",
     },
     {
-      id: "hair", name: "Hair Care", emoji: "💇", tagline: "Your best hair day, daily",
+      id: "hair", name: "Hair Care", emoji: "💇", tagline: "BASED Bodyworks — the gold standard",
       grad: ["#0b3a3a", "#2bb8a3"],
       pal: [["#0d3b36", "#27b0a0"], ["#123a5c", "#38a3e0"], ["#31255c", "#8f6fe8"], ["#3a2a10", "#d4a24e"]],
-      subs: ["Styling", "Wash", "Treatment", "Tools"],
-      boiler: "Formulated in our imaginary lab with ingredients we made up but would absolutely trust.",
+      subs: ["Styling", "Wash", "Treatment", "Curls"],
+      boiler: "From BASED Bodyworks — no parabens, no sulfates, full ingredient transparency. Simple, effective, BASED.",
     },
     {
       id: "fashion", name: "Fashion", emoji: "👕", tagline: "Drip, delivered",
       grad: ["#3a0f2e", "#e05297"],
       pal: [["#3a0f2e", "#d6488b"], ["#101c3a", "#4a6cf7"], ["#2e2010", "#c99a3f"], ["#132e22", "#39b678"]],
       subs: ["Clothing", "Shoes", "Accessories"],
-      boiler: "Cut, stitched, and styled in a dimension where everything fits perfectly on the first try.",
+      boiler: "The classics that never miss, in the sizes your imagination always stocks.",
     },
     {
       id: "tech", name: "Technology", emoji: "📱", tagline: "Tomorrow's gadgets, today-ish",
       grad: ["#0a1f3d", "#1f8fff"],
       pal: [["#0c2242", "#2f80ed"], ["#161a3a", "#7a5cff"], ["#0d3336", "#22b8c9"], ["#26102e", "#a44ae0"]],
       subs: ["Mobile", "Audio", "Power", "Smart Home", "Cameras"],
-      boiler: "Packed with specs that sound incredible because we invented them. Ships with a cable you'll lose immediately.",
+      boiler: "Flagship specs, fictional checkout. Ships with a cable you'll lose immediately.",
     },
     {
       id: "fitness", name: "Fitness", emoji: "🏋️", tagline: "Gains, guaranteed*",
@@ -52,28 +60,28 @@ DC.data = (() => {
       grad: ["#3d1607", "#f26b1d"],
       pal: [["#3d1607", "#e8641c"], ["#3a0d12", "#d63a4a"], ["#332a0e", "#d9a21b"], ["#132e1a", "#3aa85c"]],
       subs: ["Meals", "Desserts", "Drinks", "Snacks"],
-      boiler: "Prepared in a ghost kitchen so ghostly it does not exist. Zero calories, because it's fictional.",
+      boiler: "Your favorite spots, delivered fictionally hot. Zero calories, because it never arrives.",
     },
     {
       id: "home", name: "Home", emoji: "🏠", tagline: "Make your space glow",
       grad: ["#2e1d0a", "#e0a53a"],
       pal: [["#2e1f0c", "#cf9a35"], ["#12283a", "#3d8fc9"], ["#152e18", "#48a85e"], ["#2b1230", "#a052c9"]],
       subs: ["Lighting", "Decor", "Kitchen", "Storage"],
-      boiler: "Interior-designer approved (the designer is also fictional). Some assembly imaginarily required.",
+      boiler: "Interior-designer approved. Some assembly imaginarily required.",
     },
     {
       id: "auto", name: "Automotive", emoji: "🚗", tagline: "Treat your ride",
       grad: ["#161d26", "#5b7fa6"],
       pal: [["#151c26", "#4f759e"], ["#26100e", "#c94f38"], ["#101f30", "#2e7fc0"], ["#1e2410", "#8fa62b"]],
       subs: ["Care", "Gadgets", "Interior"],
-      boiler: "Fits every make and model ever produced, because none of this exists. Garage-tested in theory.",
+      boiler: "Fits every make and model, because nothing ever actually ships. Garage-tested in theory.",
     },
     {
       id: "beauty", name: "Beauty", emoji: "🧴", tagline: "Glow different",
       grad: ["#33101f", "#e0568f"],
       pal: [["#33101f", "#d15488"], ["#101f33", "#4a86d1"], ["#2c2410", "#c9a53a"], ["#0f2e2a", "#35ad96"]],
       subs: ["Skincare", "Fragrance", "Care"],
-      boiler: "Dermatologist-adjacent. Cruelty-free, reality-free, and gentle on all imaginary skin types.",
+      boiler: "The shelf-care icons your explore page keeps recommending. Gentle on all imaginary skin types.",
     },
     {
       id: "office", name: "School & Office", emoji: "📚", tagline: "Organized chaos, organized",
@@ -85,136 +93,136 @@ DC.data = (() => {
   ];
 
   /* ── Products ───────────────────────────────────────────── */
-  // [name, price, emoji, sub, badges[], blurb, hairTypes?]
+  // [name, price(SAR), emoji, sub, badges[], blurb, img, hairTypes?]
   const DEFS = {
     gaming: [
-      ["Vortex X9 Ultra Gaming PC", 2999, "🖥️", "PC Gaming", ["bestseller", "hot"], "Liquid-cooled beast with 240 fps to spare and a glass panel that glows like a reactor core."],
-      ["PhantomStrike Mech Keyboard", 149, "⌨️", "PC Gaming", ["trending"], "Hot-swappable switches, gasket mount, and a thock so deep your neighbors will feel it."],
-      ["HyperGlide Pro Wireless Mouse", 89, "🖱️", "PC Gaming", ["bestseller"], "58 grams of pure aim. 8K polling rate, zero excuses left."],
-      ["NebulaPad XXL Desk Mat", 39, "🌌", "Accessories", ["new"], "A whole galaxy for your desk. Stitched edges, zero drag, infinite vibes."],
-      ["Quantum 32\" 240Hz Monitor", 649, "📺", "PC Gaming", ["staff"], "1ms panel so smooth you'll blame lag on yourself for once."],
-      ["GripKing Elite Controller", 179, "🎮", "PlayStation", ["trending"], "Back paddles, trigger stops, and grip texture rated for rage-quit resistance."],
-      ["Apex GT Racing Wheel Bundle", 449, "🏎️", "Sim Racing", ["limited"], "Force feedback strong enough to make you apologize to the curb you clipped."],
-      ["VoidVision VR Headset", 549, "🥽", "VR", ["new", "hot"], "4K per eye. Your living room will never feel big enough again."],
-      ["ThroneX Ergo Gaming Chair", 389, "💺", "Accessories", ["bestseller"], "Lumbar support engineered for 9-hour sessions you said would be 'one quick game'."],
-      ["EchoStorm 7.1 Headset", 129, "🎧", "Streaming", ["trending"], "Hear footsteps before they happen. Mic so clean your team has no excuse to mute you."],
-      ["PrismFlow RGB Light Bars", 59, "🌈", "Accessories", ["new"], "Sixteen million colors. You will use exactly one: red."],
-      ["CreatorDeck Stream Console", 199, "🎛️", "Streaming", ["staff"], "Fifteen macro keys between you and looking extremely professional on stream."],
-      ["RetroPocket Handheld", 99, "🕹️", "Nintendo", ["limited"], "Ten thousand childhood memories in your pocket. Batteries fictionally included."],
+      ["Sony DualSense Wireless Controller", 279, "🎮", "PlayStation", ["bestseller", "hot"], "Haptics so real you'll feel the rain in the game. Adaptive triggers, zero excuses.", un("1606813907291-d86efa9b94db")],
+      ["Razer BlackWidow V4 Pro", 899, "⌨️", "PC Gaming", ["trending"], "Clicky greens, dedicated macro keys, and enough RGB to be seen from orbit.", un("1587829741301-dc798b83add3")],
+      ["Logitech G Pro X Superlight 2", 549, "🖱️", "PC Gaming", ["bestseller"], "60 grams of pure aim. If you still miss, that one's on you.", un("1527814050087-3793815479db")],
+      ["SteelSeries QcK Heavy XXL", 149, "🌌", "Accessories", ["new"], "A desk-sized runway for your mouse. Stitched edges, zero drag, infinite vibes.", un("1547394765-185e1e68f34e")],
+      ["Samsung Odyssey G7 32\"", 2499, "📺", "PC Gaming", ["staff"], "1000R curve and 240Hz. You'll blame lag on yourself for once.", un("1527443224154-c4a3942d3acf")],
+      ["Xbox Elite Series 2 Controller", 699, "🎮", "Xbox", ["trending"], "Swappable paddles, trigger stops, and grip rated for rage-quit resistance.", wm("thumb/6/67/Microsoft-Xbox-One-controller.jpg/960px-Microsoft-Xbox-One-controller.jpg")],
+      ["Logitech G29 Driving Force", 1099, "🏎️", "Sim Racing", ["limited"], "Force feedback strong enough to make you apologize to the curb you clipped.", wm("thumb/e/ed/Logitech_G29_steering_wheel.jpg/960px-Logitech_G29_steering_wheel.jpg")],
+      ["Meta Quest 3", 2199, "🥽", "VR", ["new", "hot"], "Mixed reality so good your living room will never feel big enough again.", wm("thumb/a/af/Meta_Quest_3_display_unit.jpg/960px-Meta_Quest_3_display_unit.jpg")],
+      ["Secretlab Titan Evo", 1899, "💺", "Accessories", ["bestseller"], "Lumbar support engineered for 9-hour sessions you said would be 'one quick game'.", un("1598550476439-6847785fcea6")],
+      ["HyperX Cloud II", 349, "🎧", "Streaming", ["trending"], "Hear footsteps before they happen. Mic so clean your team can't mute you.", un("1599669454699-248893623440")],
+      ["Govee RGB Light Bars", 249, "🌈", "Accessories", ["new"], "Sixteen million colors. You will use exactly one: red.", un("1550745165-9bc0b252726f")],
+      ["Blue Yeti USB Microphone", 599, "🎙️", "Streaming", ["staff"], "Podcast-grade voice for someone who mostly says 'behind you, BEHIND YOU'.", un("1590602847861-f357a9332bbc")],
+      ["Nintendo Switch OLED", 1399, "🕹️", "Nintendo", ["limited"], "Handheld joy with a screen that makes everything look like dessert.", un("1578303512597-81e6cc155b3e")],
     ],
     hair: [
-      ["TideBreak Sea Salt Spray", 24, "🌊", "Styling", ["bestseller"], "Beach hair without the beach, the sand, or the seagull incident.", ["straight", "wavy", "fine"]],
-      ["CloudCurl Defining Cream", 28, "☁️", "Styling", ["trending"], "Frizz surrenders. Curls clump, bounce, and behave like they signed a contract.", ["curly", "coily", "dry", "frizzy"]],
-      ["MatteForge Styling Clay", 22, "🪨", "Styling", [], "All-day hold with zero shine. Your hair, but with opinions.", ["straight", "wavy", "thick", "oily"]],
-      ["SilkRoot Argan Hair Oil", 32, "💧", "Treatment", ["staff"], "Five drops of liquid silk. Split ends file for retirement.", ["dry", "damaged", "frizzy", "curly"]],
-      ["VelvetWave Texture Spray", 26, "🌀", "Styling", [], "Instant 'I woke up like this' for people who absolutely did not.", ["wavy", "fine", "straight"]],
-      ["Midnight Pomade No. 9", 21, "🎩", "Styling", [], "Slick, structured, vaguely mysterious. Comes with imaginary jazz.", ["straight", "thick"]],
-      ["FeatherLift Hair Powder", 19, "🪶", "Styling", ["new"], "Volume physics said was impossible. Gravity has been notified.", ["fine", "oily", "straight"]],
-      ["HydraMask Deep Repair", 34, "🧖", "Treatment", ["bestseller"], "Ten minutes in, your hair forgets every bad decision you've made since 2019.", ["damaged", "dry", "coily", "curly"]],
-      ["StormDry Ionic Dryer", 129, "💨", "Tools", ["hot"], "Salon airflow, whisper quiet. Dries hair faster than you can find your other sock.", ["thick", "curly", "straight", "wavy"]],
-      ["CurlPop Universal Diffuser", 39, "🌸", "Tools", [], "Clips onto any dryer and treats your curls like royalty.", ["curly", "coily", "wavy"]],
-      ["GhostHold Finishing Wax", 23, "👻", "Styling", [], "Hold you can't see. Restyle it forty times a day, we won't judge.", ["thick", "straight", "wavy"]],
-      ["PureCycle Wash Duo", 29, "🫧", "Wash", ["trending"], "Sulfate-free shampoo + conditioner that resets your scalp to factory settings.", ["oily", "fine", "damaged", "dry"]],
+      ["BASED Sea Salt Spray", 77, "🌊", "Styling", ["bestseller"], "Instant fluffy, beachy look — the beach without the sand or the seagull incident.", based("jahdlsjka.png"), ["straight", "wavy", "fine"]],
+      ["BASED Texture Powder", 77, "🪶", "Styling", ["trending"], "Instant texture & volume. Gravity has been notified.", based("Cover_e9100643-2f19-4d0a-bfac-902b72e4c1d9.png"), ["fine", "oily", "straight"]],
+      ["BASED Hair Clay", 92, "🪨", "Styling", ["bestseller"], "Matte texture & strong hold. Your hair, but with opinions.", based("tts-hairclay.png"), ["straight", "wavy", "thick", "oily"]],
+      ["BASED Pomade", 92, "🎩", "Styling", [], "Slick, structured, vaguely mysterious. Comes with imaginary jazz.", based("h_fdks.png"), ["straight", "thick"]],
+      ["BASED Curl Cream", 77, "☁️", "Curls", ["trending"], "Frizz surrenders. Curls clump, bounce, and behave like they signed a contract.", based("CurlCream-WebsiteCover.png"), ["curly", "coily", "dry", "frizzy"]],
+      ["BASED Curl Mousse", 77, "🌀", "Curls", [], "Weightless definition with none of the crunch. Volume included.", based("CM-01-L.png"), ["curly", "wavy", "fine"]],
+      ["BASED Curl Gel", 77, "💠", "Curls", [], "Hold that lasts the whole day, plus the humidity has been formally dismissed.", based("CG-01.png"), ["curly", "coily", "thick"]],
+      ["BASED Curl Refresh Spray", 77, "🌸", "Curls", ["new"], "Day-two curls, resurrected in thirty seconds flat.", based("CRS-01-L.png"), ["curly", "coily", "frizzy"]],
+      ["BASED Leave-In Conditioner", 77, "💧", "Treatment", ["staff"], "All-day hydration that makes split ends file for retirement.", based("LeaveIn-WebsiteCover.png"), ["dry", "damaged", "frizzy", "curly"]],
+      ["BASED Shampoo", 107, "🫧", "Wash", ["bestseller"], "Clean, healthy hair & scalp — resets your head to factory settings.", based("1_Shampoo_-_Cover.png"), ["oily", "fine", "straight", "wavy"]],
+      ["BASED Conditioner", 107, "🧴", "Wash", [], "Silk-mode for your strands. Detangles arguments before they start.", based("1_Conditioner_-_Cover.png"), ["dry", "damaged", "thick", "coily"]],
+      ["BASED Hair Elixir", 96, "✨", "Treatment", ["hot"], "A few drops of shine, softness, and main-character energy.", based("HE-01-OCT232.png"), ["damaged", "dry", "frizzy", "curly"]],
     ],
     fashion: [
-      ["Eclipse Oversized Hoodie", 79, "🥷", "Clothing", ["bestseller"], "Heavyweight fleece, blacked out completely. Pockets deep enough for your secrets."],
-      ["AeroStride Retro Sneakers", 139, "👟", "Shoes", ["trending"], "Vintage silhouette, cloud sole. Yes, people will ask where you got them."],
-      ["Ghost Graphic Tee", 35, "👕", "Clothing", [], "280gsm cotton with a print so subtle only the right people notice."],
-      ["Nightfall Bomber Jacket", 149, "🧥", "Clothing", ["limited"], "Matte black bomber with a lining that feels like a handshake from the future."],
-      ["FlexTaper Cargo Pants", 89, "👖", "Clothing", [], "Eight pockets. You need three. You will fill all eight."],
-      ["Meridian Chrono Watch", 249, "⌚", "Accessories", ["staff"], "Sapphire glass, steel mesh, and the quiet confidence of someone always on time."],
-      ["Halo Polarized Sunglasses", 89, "🕶️", "Accessories", ["trending"], "UV400 lenses that make every parking lot look like a movie scene."],
-      ["Metro Crossbody Bag", 69, "👜", "Accessories", [], "Fits phone, wallet, keys, and the emotional baggage of your group chat."],
-      ["Snapback OG Cap", 32, "🧢", "Accessories", ["new"], "Structured crown, flat brim, instant credibility."],
-      ["Aurum Chain Necklace", 59, "📿", "Accessories", [], "18k gold-toned links. Fictionally hypoallergenic, actually iconic."],
-      ["CloudStep Slides", 45, "🩴", "Shoes", ["hot"], "Walking on marshmallows, scientifically speaking."],
+      ["Nike Tech Fleece Hoodie", 549, "🥷", "Clothing", ["bestseller"], "The hoodie that made sweatpants a lifestyle. Pockets deep enough for your secrets.", un("1556821840-3a63f95609a7")],
+      ["Adidas Samba OG", 499, "👟", "Shoes", ["trending"], "The shoe that survived every trend cycle since 1949. Yes, people will ask.", wm("thumb/f/fa/Adidas_Samba_OG.jpg/960px-Adidas_Samba_OG.jpg")],
+      ["Nike Air Force 1 '07", 449, "👟", "Shoes", ["bestseller"], "White-on-white perfection. Keeping them clean is the real endgame.", wm("thumb/7/7e/Nike_air_Force_1_white_on_white.jpg/960px-Nike_air_Force_1_white_on_white.jpg")],
+      ["Levi's Trucker Jacket", 349, "🧥", "Clothing", ["limited"], "The denim jacket every movie protagonist owns. Now it's your turn.", un("1551537482-f2075a1d41f2")],
+      ["Levi's 501 Original", 299, "👖", "Clothing", [], "The blueprint. 150 years of fit checks can't be wrong.", un("1542272604-787c3835535d")],
+      ["Casio G-Shock GA-2100", 399, "⌚", "Accessories", ["staff"], "Survives drops, dives, and deadlines. The CasiOak your wrist deserves.", un("1523170335258-f5ed11844a49")],
+      ["Ray-Ban Original Wayfarer", 649, "🕶️", "Accessories", ["trending"], "Worn by icons since 1956. Makes every parking lot look like a movie scene.", un("1572635196237-14b3f281503f")],
+      ["Gucci GG Marmont Crossbody", 8999, "👜", "Accessories", ["limited"], "Quilted leather, gold hardware, and the confidence of someone who doesn't check price tags.", un("1548036328-c9fa89d128fa")],
+      ["New Era 59FIFTY Cap", 179, "🧢", "Accessories", ["new"], "Structured crown, flat brim, instant credibility.", un("1521369909029-2afed882baee")],
+      ["Cuban Link Chain 18K", 449, "📿", "Accessories", [], "Gold-toned links with main-character shine. Fictionally hypoallergenic.", un("1599643478518-a784e5dc4c8f")],
+      ["Birkenstock Arizona", 449, "🩴", "Shoes", ["hot"], "Cork soles that mold to your feet. Comfort so real it transcends the fiction.", un("1603487742131-4160ec999306")],
     ],
     tech: [
-      ["Nova X Pro Smartphone", 1099, "📱", "Mobile", ["hot", "bestseller"], "A camera bump you could rappel from and a screen smoother than your excuses."],
-      ["SlateTab 11", 649, "📲", "Mobile", [], "Laptop power, couch energy. The pencil attaches magnetically and disappears mysteriously."],
-      ["PulseWatch Ultra", 449, "⏱️", "Mobile", ["trending"], "Tracks heart rate, sleep, and how many times you checked it to avoid conversation."],
-      ["VoltDash 140W GaN Charger", 59, "⚡", "Power", ["new"], "Charges your laptop, phone, and buds at once. Smaller than a plum."],
-      ["PowerBrick 20K", 49, "🔋", "Power", ["bestseller"], "Twenty thousand imaginary milliamps between you and 1% panic."],
-      ["BoomOrb 360 Speaker", 129, "🔊", "Audio", [], "Room-filling sound in every direction. Neighbors become fans, involuntarily."],
-      ["EchoBuds Pro ANC", 179, "🎵", "Audio", ["trending"], "Noise cancellation strong enough to mute an entire open office."],
-      ["LensCraft M1 Camera", 1299, "📷", "Cameras", ["staff"], "Full-frame fictional sensor. Your food pics are about to get a gallery show."],
-      ["GlowNest Smart Bulb Kit", 79, "💡", "Smart Home", [], "Sixteen million colors, voice controlled. 'Movie mode' will change your life."],
-      ["FindAll Tracker Tiles (4pk)", 89, "📍", "Smart Home", [], "Attach to keys, wallet, remote, and your sense of direction."],
-      ["Portal Mini Drone", 299, "🛸", "Cameras", ["limited"], "4K aerial shots and a return-home button for when you panic. You will panic."],
+      ["iPhone 16 Pro", 4899, "📱", "Mobile", ["hot", "bestseller"], "Titanium, a camera bump you could rappel from, and a screen smoother than your excuses.", un("1510557880182-3d4d3cba35a5")],
+      ["Samsung Galaxy Tab S9", 2999, "📲", "Mobile", [], "Laptop power, couch energy. The S Pen attaches magnetically and vanishes mysteriously.", un("1544244015-0df4b3ffc6b0")],
+      ["Apple Watch Ultra 2", 3399, "⏱️", "Mobile", ["trending"], "Tracks heart rate, sleep, and how often you check it to avoid conversation.", wm("4/4b/Apple_Watch_Ultra_Series_3_Natural_Titanium_Case.jpg")],
+      ["Anker Nano II 65W", 149, "⚡", "Power", ["new"], "Charges your laptop, phone, and buds at once. Smaller than a plum.", un("1588508065123-287b28e013da")],
+      ["Anker PowerCore 20K", 199, "🔋", "Power", ["bestseller"], "Twenty thousand milliamps between you and 1% panic.", un("1609091839311-d5365f9ff1c5")],
+      ["JBL Charge 5", 649, "🔊", "Audio", [], "Room-filling sound in every direction. Neighbors become fans, involuntarily.", un("1608043152269-423dbba4e7e1")],
+      ["Apple AirPods Pro 2", 949, "🎵", "Audio", ["trending"], "Noise cancellation strong enough to mute an entire open office.", wm("b/b9/AirPods_Pro_3_with_case.jpg")],
+      ["Sony α7 IV", 9999, "📷", "Cameras", ["staff"], "Full-frame magic. Your food pics are about to get a gallery show.", un("1516035069371-29a1b244cc32")],
+      ["Philips Hue Starter Kit", 799, "💡", "Smart Home", [], "Sixteen million colors, voice controlled. 'Movie mode' will change your life.", un("1565814329452-e1efa11c5b89")],
+      ["Apple AirTag (4-Pack)", 449, "📍", "Smart Home", [], "Attach to keys, wallet, remote, and your sense of direction.", un("1622434641406-a158123450f9")],
+      ["DJI Mini 4 Pro", 3299, "🛸", "Cameras", ["limited"], "4K aerial shots and a return-home button for when you panic. You will panic.", wm("thumb/2/2f/DJI_Mavic_Pro.jpg/960px-DJI_Mavic_Pro.jpg")],
     ],
     fitness: [
-      ["TitanShake Pro Shaker", 24, "🥤", "Gear", [], "Leak-proof, whisk ball included, survives being thrown in gym bags and moods."],
-      ["IronGrip Adjustable Dumbbells", 299, "🏋️", "Equipment", ["bestseller"], "5 to 50 lbs with one click. An entire rack living under your bed."],
-      ["FlexLoop Resistance Bands", 29, "🪢", "Equipment", [], "Five tension levels from 'warm-up' to 'why did I buy these'."],
-      ["BeastMode Gym Duffel", 59, "🧳", "Gear", [], "Ventilated shoe pocket, wet pouch, and room for gear you'll definitely use."],
-      ["HydroTank 1-Gallon", 34, "🚰", "Gear", ["trending"], "Time markers guilt-trip you into hydration, hour by hour."],
-      ["VelocityRun Racers", 149, "🏃", "Gear", ["hot"], "Carbon-plated fictional foam. PRs voluntary but statistically likely."],
-      ["ZenFold Exercise Mat", 45, "🧘", "Recovery", ["trending"], "Extra thick, zero slip. Ideal for yoga, stretching, and lying down dramatically."],
-      ["RollOut Recovery Roller", 32, "🪵", "Recovery", [], "Hurts so good. Your IT band will write you a thank-you note eventually."],
-      ["PulseBand Tracker", 99, "📈", "Gear", ["new"], "Counts steps, reps, and streaks. Judges you silently but supportively."],
-      ["GripPro Lifting Kit", 27, "🧤", "Equipment", [], "Chalk, straps, and wrist wraps. Calluses sold separately."],
+      ["BlenderBottle Classic 28oz", 79, "🥤", "Gear", [], "Leak-proof, whisk ball included, survives being thrown in gym bags and moods.", un("1593095948071-474c5cc2989d")],
+      ["Bowflex SelectTech 552", 2199, "🏋️", "Equipment", ["bestseller"], "5 to 52 lbs with one twist. An entire rack living under your bed.", un("1517836357463-d25dfeac3438")],
+      ["Fit Simplify Resistance Bands", 99, "🪢", "Equipment", [], "Five tension levels from 'warm-up' to 'why did I buy these'.", un("1598289431512-b97b0917affc")],
+      ["Under Armour Undeniable Duffel", 249, "🧳", "Gear", [], "Ventilated shoe pocket, wet pouch, and room for gear you'll definitely use.", un("1547949003-9792a18a2601")],
+      ["HydroJug Pro 1-Gallon", 129, "🚰", "Gear", ["trending"], "Time markers guilt-trip you into hydration, hour by hour.", un("1602143407151-7111542de6e8")],
+      ["Nike Pegasus 41", 599, "🏃", "Gear", ["hot"], "The workhorse of running shoes. PRs voluntary but statistically likely.", un("1542291026-7eec264c27ff")],
+      ["Manduka PRO Yoga Mat", 499, "🧘", "Recovery", ["trending"], "Extra thick, zero slip. Ideal for yoga, stretching, and lying down dramatically.", un("1544367567-0f2fcb009e0b")],
+      ["TriggerPoint GRID Roller", 179, "🪵", "Recovery", [], "Hurts so good. Your IT band will write you a thank-you note eventually.", un("1600881333168-2ef49b341f30")],
+      ["Fitbit Charge 6", 649, "📈", "Gear", ["new"], "Counts steps, reps, and streaks. Judges you silently but supportively.", un("1508685096489-7aacd43bd3b1")],
+      ["Harbinger Lifting Kit", 99, "🧤", "Equipment", [], "Straps, wraps, and grip for days. Calluses sold separately.", un("1526506118085-60ce8714f8c5")],
     ],
     food: [
-      ["Inferno Pepperoni Pizza", 18, "🍕", "Meals", ["bestseller", "hot"], "Wood-fired, triple pepperoni, edges like stained glass. Ships at exactly 68° of perfect."],
-      ["Double Stack Smash Burger", 14, "🍔", "Meals", ["trending"], "Two crispy-edged patties, secret sauce, and a bun with structural integrity."],
-      ["Crispy Karaage Bucket", 16, "🍗", "Meals", [], "Japanese fried chicken so crunchy the mic picks it up from another room."],
-      ["Molten Lava Cake", 9, "🍫", "Desserts", ["staff"], "The center flows like it has somewhere important to be. Ice cream included, obviously."],
-      ["Cloud Nine Latte", 6, "☕", "Drinks", [], "Triple-shot with oat milk foam art of a cloud. Tastes like a productive morning."],
-      ["Taro Dream Bubble Tea", 7, "🧋", "Drinks", ["trending"], "Purple, creamy, 50% boba by volume. The straw is basically a slide."],
-      ["Galaxy Swirl Gelato", 8, "🍨", "Desserts", [], "Blackberry, vanilla bean, and edible glitter. Legally a mood improver."],
-      ["Midnight Snack Box", 19, "🍿", "Snacks", ["limited"], "A curated 2am experience: sweet, salty, crunchy, and one mystery item."],
-      ["Sunrise Açaí Bowl", 12, "🫐", "Meals", [], "Granola, berries, and the smug satisfaction of a healthy choice."],
-      ["Dragon Roll Sushi Set", 22, "🍣", "Meals", ["staff"], "Twelve pieces of architecture you can eat. Wasabi calibrated to 'brave'."],
-      ["Street Taco Trio", 11, "🌮", "Meals", [], "Al pastor, carne asada, and one wildcard. Double tortilla, no notes."],
-      ["Honey Butter Croissant", 5, "🥐", "Desserts", ["new"], "Seventy-two imaginary layers of laminated joy. Flake radius: two meters."],
+      ["Albaik 10-Pc Chicken Meal", 27, "🍗", "Meals", ["bestseller", "hot"], "The national treasure. Garlic sauce included, patience at the branch not required.", un("1562967914-608f82629710")],
+      ["Herfy Big Herfy Meal", 24, "🍔", "Meals", ["trending"], "The hometown double-decker that never left the group chat's top three.", un("1568901346375-23c9450c58cd")],
+      ["Kudu Chicken Fillet", 19, "🥪", "Meals", [], "The sandwich that raised a generation of road-trippers.", un("1606755962773-d324e0a13086")],
+      ["Shawarmer Classic Shawarma", 14, "🌯", "Meals", [], "Garlic paste, crispy edges, wrapped tighter than your schedule.", un("1529006557810-274b9b2fc783")],
+      ["Half Million Spanish Latte", 22, "☕", "Drinks", ["staff"], "Sweet, smooth, and responsible for half the city's energy.", un("1541167760496-1628856ab772")],
+      ["Barn's Signature Cappuccino", 16, "🤎", "Drinks", [], "The Saudi coffee run classic. Foam art may cause feelings.", un("1509042239860-f550ce710b93")],
+      ["Krispy Kreme Original Dozen", 42, "🍩", "Desserts", ["trending"], "Twelve glazed reasons the hot light is the best traffic signal in town.", un("1551024601-bec78aea704b")],
+      ["Baskin-Robbins 2-Scoop", 18, "🍨", "Desserts", [], "31 flavors, one impossible decision, zero regrets.", un("1497034825429-c343d7c6a68f")],
+      ["Domino's Pepperoni Large", 39, "🍕", "Meals", [], "Cheese pull rated 9.7 by the fictional judges.", un("1513104890138-7c749659a591")],
+      ["Dunkin' Iced Spanish Latte", 15, "🧋", "Drinks", ["new"], "Cold, creamy, and gone before you reach the car.", un("1461023058943-07fcbe16d735")],
+      ["Subway Chicken Teriyaki", 21, "🥖", "Meals", [], "Footlong, double cheese, toasted — you know the ritual.", un("1509722747041-616f39b57569")],
+      ["Honey Butter Croissant", 12, "🥐", "Desserts", ["staff"], "Seventy-two layers of laminated joy. Flake radius: two meters.", un("1555507036-ab1f4038808a")],
     ],
     home: [
-      ["AuroraStrip LED Kit 5m", 39, "💫", "Lighting", ["bestseller"], "Music-sync mode turns your ceiling into the aurora borealis, localized entirely in your room."],
-      ["LumenArc Desk Lamp", 69, "🪔", "Lighting", [], "Wireless charging base, infinite dimming, and an arc that looks like modern art."],
-      ["Monstera 'Big Leaf' Plant", 45, "🪴", "Decor", ["staff"], "Thrives on neglect and compliments. Comes pre-loved by an imaginary greenhouse."],
-      ["CloudNine Bean Bag", 129, "🛋️", "Decor", ["bestseller"], "Memory foam the size of a small moon. Getting out is a tomorrow problem."],
-      ["NeonFrame Wall Art", 89, "🖼️", "Decor", [], "LED-lined print that makes any wall the main character."],
-      ["StackrCube Storage Set", 49, "🗄️", "Storage", [], "Six modular cubes that turn chaos into 'aesthetic minimalism'."],
-      ["SizzleChef Air Fryer XL", 119, "🍳", "Kitchen", ["trending"], "Crispy everything, zero guilt, one appliance now responsible for 80% of your meals."],
-      ["ZenBrew Pour-Over Kit", 54, "🫖", "Kitchen", [], "Gooseneck kettle, glass dripper, and the moral high ground over pod coffee."],
-      ["DriftScent Diffuser", 39, "🕯️", "Decor", [], "Ultrasonic mist plus 'Rainy Bookstore' oil. Your room, but cinematic."],
-      ["OrbitClock Levitating Clock", 99, "🕰️", "Decor", ["limited"], "The hour marker floats via fictional magnets. Guests will demand an explanation."],
+      ["Govee LED Strip 5m", 129, "💫", "Lighting", ["bestseller"], "Music-sync mode turns your ceiling into the aurora borealis, localized entirely in your room.", un("1519608487953-e999c86e7455")],
+      ["Xiaomi Mi Desk Lamp Pro", 149, "🪔", "Lighting", [], "Infinite dimming and an arc that looks like modern art.", un("1507473885765-e6ed057f782c")],
+      ["Monstera Deliciosa Plant", 89, "🪴", "Decor", ["staff"], "Thrives on neglect and compliments. Big-leaf energy included.", un("1614594975525-e45190c55d0b")],
+      ["Fatboy Original Bean Bag", 699, "🛋️", "Decor", ["bestseller"], "Memory foam the size of a small moon. Getting out is a tomorrow problem.", un("1567016432779-094069958ea5")],
+      ["Neon Wall Art Sign", 299, "🖼️", "Decor", [], "LED glow that makes any wall the main character.", un("1563089145-599997674d42")],
+      ["IKEA KALLAX Shelf Unit", 399, "🗄️", "Storage", [], "Eight cubes that turn chaos into 'aesthetic minimalism'.", un("1594620302200-9a762244a156")],
+      ["Philips Airfryer XXL", 899, "🍳", "Kitchen", ["trending"], "Crispy everything, zero guilt, one appliance now responsible for 80% of your meals.", un("1556909114-f6e7ad7d3136")],
+      ["Chemex Pour-Over Set", 349, "🫖", "Kitchen", [], "Glass-hourglass coffee and the moral high ground over pod machines.", un("1544787219-7f47ccb76574")],
+      ["Vitruvi Stone Diffuser", 249, "🕯️", "Decor", [], "Ultrasonic mist plus 'Rainy Bookstore' oil. Your room, but cinematic.", un("1608571423902-eed4a5ad8108")],
+      ["Braun Classic Alarm Clock", 199, "🕰️", "Decor", ["limited"], "Dieter Rams design. Waking up is still bad, but it looks incredible.", un("1563861826100-9cb868fdbe1c")],
     ],
     auto: [
-      ["TurboShine Detail Kit", 49, "🧽", "Care", [], "Foam cannon, microfiber army, and a shine that resets your car to showroom."],
-      ["FrostByte Car Vacuum", 69, "🌪️", "Gadgets", [], "Cordless cyclone that finds fries from road trips you don't remember taking."],
-      ["MidnightPine Fresheners 3pk", 12, "🌲", "Interior", ["new"], "Smells like a forest that also went to design school."],
-      ["MagLock Phone Mount", 29, "🧲", "Gadgets", ["bestseller"], "Snaps on one-handed at a red light. Holds through potholes and questionable playlists."],
-      ["GuardianEye Dash Cam", 129, "📹", "Gadgets", ["staff"], "4K front and rear witness. Night vision sharp enough to read regret."],
-      ["AllWeather Floor Mats", 79, "🛞", "Interior", [], "Laser-measured fictional fit. Contains spills, mud, and juice box incidents."],
-      ["BoostAir Tire Inflator", 59, "🎈", "Gadgets", [], "Auto-stops at target PSI. The low-pressure light fears you now."],
-      ["NightRider Underglow Kit", 89, "🚗", "Interior", ["limited"], "App-controlled glow. Technically street-legal in the fictional universe."],
-      ["ApexWax Ceramic Coat", 39, "✨", "Care", [], "Water beads so hard it looks like CGI. Lasts six imaginary months."],
-      ["CargoNet Trunk Organizer", 25, "🕸️", "Interior", [], "Groceries stay upright. The rogue orange era is over."],
+      ["Meguiar's Complete Detail Kit", 249, "🧽", "Care", [], "Foam cannon, microfiber army, and a shine that resets your car to showroom.", un("1520340356584-f9917d1eea6f")],
+      ["Baseus A2 Pro Car Vacuum", 179, "🌪️", "Gadgets", [], "Cordless cyclone that finds fries from road trips you don't remember taking.", null],
+      ["Little Trees Black Ice 3-Pack", 25, "🌲", "Interior", ["new"], "Smells like a forest that also went to design school.", un("1441974231531-c6227db76b6e")],
+      ["iOttie MagSafe Car Mount", 129, "🧲", "Gadgets", ["bestseller"], "Snaps on one-handed at a red light. Holds through potholes and questionable playlists.", un("1512428559087-560fa5ceab42")],
+      ["70mai A800S Dash Cam", 449, "📹", "Gadgets", ["staff"], "4K front and rear witness. Night vision sharp enough to read regret.", un("1449965408869-eaa3f722e40d")],
+      ["WeatherTech FloorLiner Set", 599, "🛞", "Interior", [], "Laser-measured fit. Contains spills, mud, and juice box incidents.", un("1503376780353-7e6692767b70")],
+      ["Michelin Digital Tire Inflator", 199, "🎈", "Gadgets", [], "Auto-stops at target PSI. The low-pressure light fears you now.", un("1568605117036-5fe5e7bab0b7")],
+      ["Govee Car Underglow Kit", 229, "🚗", "Interior", ["limited"], "App-controlled glow. Technically street-legal in the fictional universe.", un("1544636331-e26879cd4d9b")],
+      ["Turtle Wax Ceramic Spray", 89, "✨", "Care", [], "Water beads so hard it looks like CGI. Lasts six imaginary months.", null],
+      ["Amazon Basics Trunk Organizer", 99, "🕸️", "Interior", [], "Groceries stay upright. The rogue orange era is over.", null],
     ],
     beauty: [
-      ["GlassSkin Hydra Serum", 42, "💎", "Skincare", ["bestseller"], "Hyaluronic everything. Your face, but with the clarity filter built in."],
-      ["VelvetCloud Moisturizer", 36, "🌥️", "Skincare", [], "Whipped, weightless, and gone in three seconds. Dry patches never happened."],
-      ["PureFoam Gel Cleanser", 24, "🧼", "Skincare", [], "Removes sunscreen, city, and the general concept of Monday."],
-      ["SolarShield SPF 50", 28, "☀️", "Skincare", ["staff"], "No white cast, no grease, no excuse. Future you says thanks."],
-      ["HoneyDrop Lip Balm Trio", 15, "🍯", "Care", ["new"], "Honey, vanilla, and salted caramel. You will lose two. That's why it's a trio."],
-      ["NoirEssence Cologne", 89, "🌑", "Fragrance", ["limited"], "Smoked cedar and amber. Two compliments per wear, fictionally guaranteed."],
-      ["MidnightOud Body Wash", 22, "🛁", "Care", [], "A ten-minute shower becomes a forty-minute lore-building session."],
-      ["BrightByte Whitening Kit", 49, "🦷", "Care", [], "LED tray plus gel. Your smile, remastered in HD."],
-      ["RoseQuartz Face Roller", 26, "🌹", "Skincare", ["trending"], "Cold stone, warm reviews. De-puffs mornings and existential dread."],
-      ["AquaMist Toner Spray", 21, "🌫️", "Skincare", [], "Three-second reset button for your face. Cucumber optional, drama free."],
+      ["CeraVe Foaming Cleanser", 89, "🧼", "Skincare", ["bestseller"], "Removes sunscreen, city, and the general concept of Monday.", un("1556228578-8c89e6adf883")],
+      ["The Ordinary Niacinamide 10%", 65, "💎", "Skincare", ["trending"], "The serum with a cult following and a chemistry-exam name.", un("1620916566398-39f1143ab7be")],
+      ["La Roche-Posay Anthelios SPF50+", 119, "☀️", "Skincare", ["staff"], "No white cast, no grease, no excuse. Future you says thanks.", un("1526947425960-945c6e72858f")],
+      ["Cetaphil Moisturising Cream", 79, "🌥️", "Skincare", [], "Whipped, weightless, and gone in three seconds. Dry patches never happened.", un("1556228720-195a672e8a03")],
+      ["Burt's Bees Lip Balm Trio", 45, "🍯", "Care", ["new"], "Beeswax, honey, and pomegranate. You will lose two. That's why it's a trio.", un("1586495777744-4413f21062fa")],
+      ["Chanel N°5 EDP 100ml", 699, "🌑", "Fragrance", ["limited"], "A century of icon status in one bottle. Compliments fictionally guaranteed.", un("1541643600914-78b084683601")],
+      ["Rituals Samurai Body Wash", 69, "🛁", "Care", [], "A ten-minute shower becomes a forty-minute lore-building session.", un("1583947581924-860bda6a26df")],
+      ["Crest 3D Whitestrips", 189, "🦷", "Care", [], "Your smile, remastered in HD.", un("1606811841689-23dfddce3e95")],
+      ["Rose Quartz Face Roller", 79, "🌹", "Skincare", ["trending"], "Cold stone, warm reviews. De-puffs mornings and existential dread.", un("1596462502278-27bfdc403348")],
+      ["Evian Facial Spray", 55, "🌫️", "Skincare", [], "A three-second reset button for your face. Drama free.", un("1600428877878-1a0fd85beda8")],
     ],
     office: [
-      ["InkFlow Dotted Notebook", 18, "📓", "Paper", [], "160gsm pages with zero ghosting. Your bullet journal era starts now."],
-      ["GlidePen Gel Set (12)", 14, "🖊️", "Tools", ["bestseller"], "0.5mm lines so smooth your handwriting gets a promotion."],
-      ["UrbanPack Pro Backpack", 89, "🎒", "Carry", ["trending"], "Laptop cave, hidden pockets, and a back panel that breathes better than you in a meeting."],
-      ["MathCore Calculator", 29, "🧮", "Tools", [], "Solves everything except word problems about trains."],
-      ["FocusDock Organizer", 39, "🗂️", "Desk", [], "A home for pens, cables, and the seven chapsticks you own apparently."],
-      ["StickyBrain Note Cubes", 9, "🗒️", "Paper", ["new"], "800 neon sticky notes. Your monitor bezel is about to become a mosaic."],
-      ["LaserJot Smart Pen", 129, "✒️", "Tools", ["limited"], "Digitizes handwriting in real time, typos and doodles included."],
-      ["DeskZen Monitor Stand", 49, "🪜", "Desk", [], "Raises your screen and your posture's self-esteem. Drawer included."],
-      ["ChronoTimer Focus Cube", 25, "⏲️", "Desk", ["staff"], "Flip for 25 minutes of pure focus. Procrastination hates this one trick."],
-      ["PaperTrail Planner", 22, "📅", "Paper", [], "Weekly spreads, habit trackers, and one guilt-free skipped week."],
+      ["Moleskine Classic Notebook", 119, "📓", "Paper", [], "The notebook of Hemingway and Picasso. Your grocery lists are in good company.", un("1531346878377-a5be20888e57")],
+      ["Pilot G2 Gel Pens (12)", 59, "🖊️", "Tools", ["bestseller"], "0.5mm lines so smooth your handwriting gets a promotion.", un("1583485088034-697b5bc54ccd")],
+      ["JanSport Right Pack", 249, "🎒", "Carry", ["trending"], "The suede-bottom classic that survived every school year since forever.", un("1553062407-98eeb64c6a62")],
+      ["Casio FX-991EX ClassWiz", 129, "🧮", "Tools", [], "Solves everything except word problems about trains.", un("1587145820266-a5951ee6f620")],
+      ["UGREEN Monitor Stand", 159, "🗂️", "Desk", [], "Raises your screen and your posture's self-esteem. Drawer included.", un("1593642632823-8f785ba67e45")],
+      ["Post-it Notes Cube", 25, "🗒️", "Paper", ["new"], "800 neon sticky notes. Your monitor bezel is about to become a mosaic.", un("1586281380349-632531db7ed4")],
+      ["Rocketbook Core Smart Notebook", 149, "✒️", "Tools", ["limited"], "Write, scan, erase, repeat. One notebook forever, allegedly.", un("1517842645767-c639042777db")],
+      ["String Shelf Desk Riser", 189, "🪜", "Desk", [], "Scandinavian minimalism for the six chapsticks you own apparently.", un("1518455027359-f3f8164ba6bd")],
+      ["Pomodoro Focus Timer", 99, "⏲️", "Desk", ["staff"], "Flip for 25 minutes of pure focus. Procrastination hates this one trick.", un("1501139083538-0139583c060f")],
+      ["Moleskine Weekly Planner", 99, "📅", "Paper", [], "Weekly spreads, habit trackers, and one guilt-free skipped week.", un("1506784983877-45594efa4cbe")],
     ],
   };
 
@@ -224,7 +232,7 @@ DC.data = (() => {
 
   CATEGORIES.forEach((cat) => {
     (DEFS[cat.id] || []).forEach((d, i) => {
-      const [name, price, emoji, sub, badges, blurb, hairTypes] = d;
+      const [name, price, emoji, sub, badges, blurb, img, hairTypes] = d;
       const id = `${cat.id}-${i + 1}`;
       const h = hash(id + name);
       const p = {
@@ -232,6 +240,7 @@ DC.data = (() => {
         badges: badges || [],
         blurb,
         desc: `${blurb} ${cat.boiler}`,
+        img: img || null,
         hairTypes: hairTypes || null,
         grad: cat.pal[i % cat.pal.length],
         rating: (40 + (h % 11)) / 10,                    // 4.0 – 5.0
@@ -266,7 +275,7 @@ DC.data = (() => {
   /* ── Flash sale (rotates daily, deterministic) ──────────── */
   const flashSale = () => {
     const seed = daySeed();
-    const picks = pickSeeded(PRODUCTS.filter((p) => p.price >= 20), 6, seed);
+    const picks = pickSeeded(PRODUCTS.filter((p) => p.price >= 50), 6, seed);
     const rand = seededRand(seed * 7 + 1);
     return picks.map((p) => ({
       ...p,
@@ -307,7 +316,7 @@ DC.data = (() => {
     "Arrived fictionally fast. My whole personality is built around this now.",
     "I don't usually write reviews but this changed the trajectory of my week.",
     "Bought one for me and one for my future self. No regrets on either.",
-    "The hype is real. The product is not. Somehow still worth it.",
+    "The hype is real. The delivery is not. Somehow still worth it.",
     "My friends keep asking about it. I keep gatekeeping. 10/10.",
     "Quality feels premium beyond the price. DopaCart cooked with this one.",
     "This is my third one. Not because they break — because I love them.",
@@ -344,6 +353,7 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.1.0", notes: ["Prices now in Saudi Riyals (SAR) with 15% VAT", "Real product photos across the catalog", "Real brand names — incl. Saudi favorites in Food & Drinks", "Hair Care is now the full BASED Bodyworks lineup (based.com)", "Economy rebalanced for SAR"] },
     { v: "1.0.0", notes: ["Initial release", "10 categories, 100+ fictional products", "Live order tracking with fake map", "Rewards: XP, coins, streaks, spins, mystery boxes", "5 unlockable themes", "Full offline support (PWA)"] },
   ];
 

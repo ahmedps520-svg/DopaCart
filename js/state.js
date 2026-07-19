@@ -13,7 +13,7 @@ DC.store = (() => {
   const defaults = () => ({
     created: Date.now(),
     lastVisit: Date.now(),
-    cash: 5000,
+    cash: 20000,
     coins: 120,
     xp: 0,
     streak: { count: 0, lastClaim: "" },
@@ -105,12 +105,12 @@ DC.store = (() => {
     if (x !== undefined) U.floatText("+" + amount + " XP", x, y);
     if (after > before) {
       // Level-up rewards: cash, coins, a spin token.
-      const cash = 100 * after, coins = 25 * after;
+      const cash = 400 * after, coins = 25 * after;
       s.cash += cash; s.coins += coins; s.spins += 1;
       save();
       U.haptic([30, 60, 30]);
       U.confetti({ count: 160 });
-      pushNotif("🏆", `Level ${after} reached!`, `${levelTitle(after)} · +$${cash} · +${coins} coins · +1 spin`, true);
+      pushNotif("🏆", `Level ${after} reached!`, `${levelTitle(after)} · +SAR ${cash} · +${coins} coins · +1 spin`, true);
       DC.app?.showLevelUp?.(after);
       // Any level-gated themes at or below the new level unlock now
       // (covers multi-level jumps from one big XP grant).
@@ -135,7 +135,7 @@ DC.store = (() => {
     const yesterday = new Date(Date.now() - 86400000).toDateString();
     s.streak.count = s.streak.lastClaim === yesterday ? s.streak.count + 1 : 1;
     s.streak.lastClaim = todayStr();
-    const cash = 250 + (s.streak.count - 1) * 50;
+    const cash = 1000 + (s.streak.count - 1) * 200;
     const coins = 30 + (s.streak.count - 1) * 10;
     s.cash += cash; s.coins += coins;
     save();
@@ -155,12 +155,12 @@ DC.store = (() => {
     return false;
   };
 
-  // Passive earnings while away ($150/hr, capped at 24h).
+  // Passive earnings while away (SAR 600/hr, capped at 24h).
   const collectAwayEarnings = () => {
     const away = Date.now() - (s.lastVisit || Date.now());
     s.lastVisit = Date.now();
     if (away < 30 * 60000) { save(); return 0; }
-    const earned = Math.min(Math.round((away / 3600000) * 150), 3600);
+    const earned = Math.min(Math.round((away / 3600000) * 600), 14400);
     s.cash += earned;
     save();
     return earned;
@@ -231,9 +231,9 @@ DC.store = (() => {
     const subtotal = items.reduce((a, it) => a + it.p.price * it.qty, 0);
     const coupon = couponCode ? DC.data.COUPONS[couponCode] : null;
     const discount = coupon?.pct ? (subtotal * coupon.pct) / 100 : 0;
-    let delivery = subtotal === 0 || subtotal >= 75 ? 0 : 3.99;
+    let delivery = subtotal === 0 || subtotal >= 200 ? 0 : 15;
     if (coupon?.freeShip) delivery = 0;
-    const tax = (subtotal - discount) * 0.08;
+    const tax = (subtotal - discount) * 0.15;             // Saudi VAT
     return {
       subtotal, discount, delivery, tax,
       total: subtotal - discount + delivery + tax,
@@ -353,8 +353,8 @@ DC.store = (() => {
     { id: "level-10", emoji: "🌟", name: "Level 10", test: () => levelInfo().level >= 10 },
     { id: "streak-3", emoji: "🔥", name: "3-Day Streak", test: () => s.streak.count >= 3 },
     { id: "streak-7", emoji: "⚡", name: "7-Day Streak", test: () => s.streak.count >= 7 },
-    { id: "big-spender", emoji: "💸", name: "Big Spender", test: () => s.stats.spent >= 10000 },
-    { id: "high-roller", emoji: "🎰", name: "High Roller", test: () => s.orders.some((o) => o.totals.total >= 2000) },
+    { id: "big-spender", emoji: "💸", name: "Big Spender", test: () => s.stats.spent >= 40000 },
+    { id: "high-roller", emoji: "🎰", name: "High Roller", test: () => s.orders.some((o) => o.totals.total >= 7500) },
     { id: "spin-master", emoji: "🎡", name: "Spin Master", test: () => s.stats.spinsDone >= 5 },
     { id: "unboxer", emoji: "🎁", name: "Unboxer", test: () => s.stats.boxes >= 3 },
     { id: "completionist", emoji: "👑", name: "Completionist", test: () => s.stats.cats.length >= 5 },
@@ -367,10 +367,10 @@ DC.store = (() => {
     ACH.forEach((a) => {
       if (!s.ach.includes(a.id) && a.test()) {
         s.ach.push(a.id);
-        s.coins += 50; s.cash += 100;                     // flat reward, no XP (avoids loops)
+        s.coins += 50; s.cash += 400;                     // flat reward, no XP (avoids loops)
         save();
         U.haptic([20, 40, 20]);
-        pushNotif(a.emoji, "Badge unlocked: " + a.name, "+$100 · +50 coins");
+        pushNotif(a.emoji, "Badge unlocked: " + a.name, "+SAR 400 · +50 coins");
       }
     });
     achChecking = false;

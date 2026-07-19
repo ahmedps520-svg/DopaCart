@@ -174,8 +174,10 @@ DC.views.settings = (() => {
     <h3 style="text-align:center;margin-bottom:14px">Credits</h3>
     <div class="set-group glass">
       <div class="set-row"><span class="s-e">🎨</span><div class="s-t">Design & code<div class="tiny muted">Built with vanilla HTML, CSS & JS</div></div></div>
+      <div class="set-row"><span class="s-e">💇</span><div class="s-t">Hair Care lineup<div class="tiny muted">BASED Bodyworks — photos from based.com</div></div></div>
+      <div class="set-row"><span class="s-e">📷</span><div class="s-t">Product photos<div class="tiny muted">Unsplash & Wikimedia Commons — hotlinked, all rights with their owners</div></div></div>
+      <div class="set-row"><span class="s-e">🏷️</span><div class="s-t">Brand names<div class="tiny muted">Belong to their owners; shown for flavor only — nothing is sold here</div></div></div>
       <div class="set-row"><span class="s-e">🛵</span><div class="s-t">Fictional couriers<div class="tiny muted">Marco, Aisha, Kenji, Luna, Diego, Priya & Omar</div></div></div>
-      <div class="set-row"><span class="s-e">🧪</span><div class="s-t">Imaginary lab<div class="tiny muted">All 100+ products invented in-house</div></div></div>
       <div class="set-row"><span class="s-e">💡</span><div class="s-t">Inspiration<div class="tiny muted">DoorDash · Uber Eats · Apple · Linear</div></div></div>
     </div>
     <button class="btn btn-glass btn-block" data-action="close-modal">Close</button>`);

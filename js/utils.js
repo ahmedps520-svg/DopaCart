@@ -10,16 +10,21 @@ DC.util = (() => {
 
   /* ── Formatting ─────────────────────────────────────────── */
 
-  const money = (n) =>
-    "$" + Number(n).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+  // Prices are in Saudi Riyals. Whole riyals show clean ("SAR 77"),
+  // computed totals keep their halalas ("SAR 2,591.15").
+  const money = (n) => {
+    const v = Number(n);
+    const decimals = Math.abs(v - Math.round(v)) < 0.005 ? 0 : 2;
+    return "SAR " + v.toLocaleString("en-US", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     });
+  };
 
   const moneyShort = (n) =>
-    n >= 1000
-      ? "$" + (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + "k"
-      : "$" + Math.round(n).toLocaleString();
+    n >= 10000
+      ? "SAR " + (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + "k"
+      : "SAR " + Math.round(n).toLocaleString();
 
   const num = (n) =>
     n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n);

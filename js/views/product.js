@@ -22,7 +22,10 @@ DC.views.product = (() => {
     const pr = UI.priceOf(p);
     const reviews = D.reviewsFor(p);
     const similar = D.byCat(p.cat).filter((x) => x.id !== p.id).slice(0, 6);
-    const gallery = [p.emoji, cat.emoji, "✨"];
+    // First thumb is the real photo (when we have one); the rest are art modes.
+    const gallery = p.img
+      ? [{ v: "__photo", label: `<img class="thumb-photo" src="${p.img}" alt="">` }, { v: p.emoji, label: p.emoji }, { v: cat.emoji, label: cat.emoji }]
+      : [{ v: p.emoji, label: p.emoji }, { v: cat.emoji, label: cat.emoji }, { v: "✨", label: "✨" }];
 
     return `
     <div class="page-head">
@@ -33,13 +36,14 @@ DC.views.product = (() => {
       </button>
     </div>
 
-    <div class="pd-hero" style="${UI.gradStyle(p)}">
+    <div class="pd-hero" style="${UI.gradStyle(p)}" id="pd-hero">
       <span class="p-emoji" id="pd-hero-emoji">${p.emoji}</span>
+      ${p.img ? `<img class="pd-photo" src="${p.img}" alt="${U.esc(p.name)}" onerror="this.remove()">` : ""}
     </div>
     <div class="pd-gallery">
       ${gallery.map((g, i) => `
-        <button class="pd-thumb ${i === 0 ? "active" : ""}" data-action="pd-thumb" data-id="${g}"
-          style="${UI.gradStyle(p)}">${g}</button>`).join("")}
+        <button class="pd-thumb ${i === 0 ? "active" : ""}" data-action="pd-thumb" data-id="${U.esc(g.v)}"
+          style="${UI.gradStyle(p)}">${g.label}</button>`).join("")}
     </div>
 
     <div class="pd-title">${U.esc(p.name)}</div>
@@ -56,7 +60,7 @@ DC.views.product = (() => {
 
     <div class="info-cards">
       <div class="info-card"><div class="e">⏱</div><div class="t">Delivery</div><div class="v">${p.mins} min</div></div>
-      <div class="info-card"><div class="e">🚚</div><div class="t">Shipping</div><div class="v">${pr.price >= 75 ? "Free" : "$3.99"}</div></div>
+      <div class="info-card"><div class="e">🚚</div><div class="t">Shipping</div><div class="v">${pr.price >= 200 ? "Free" : "SAR 15"}</div></div>
       <div class="info-card"><div class="e">📦</div><div class="t">Stock</div><div class="v">${p.stock} left</div></div>
     </div>
 
@@ -119,14 +123,32 @@ DC.views.product = (() => {
 
   const getQty = () => qty;
 
-  const setHero = (emoji, thumbEl) => {
-    const hero = document.getElementById("pd-hero-emoji");
-    if (hero) {
-      hero.textContent = emoji;
-      hero.animate([
-        { transform: "scale(0.6) rotate(-10deg)", opacity: 0 },
-        { transform: "scale(1) rotate(0)", opacity: 1 },
-      ], { duration: 350, easing: "cubic-bezier(0.34,1.56,0.64,1)" });
+  // Switch the hero between the real photo ("__photo") and emoji-art views.
+  const setHero = (value, thumbEl) => {
+    const hero = document.getElementById("pd-hero");
+    const emojiEl = document.getElementById("pd-hero-emoji");
+    if (hero && emojiEl) {
+      const p = D.byId(currentId);
+      let photo = hero.querySelector(".pd-photo");
+      if (value === "__photo" && p?.img) {
+        if (!photo) {
+          photo = document.createElement("img");
+          photo.className = "pd-photo";
+          photo.src = p.img;
+          photo.alt = p.name;
+          photo.onerror = () => photo.remove();
+          hero.appendChild(photo);
+        }
+        photo.style.display = "";
+        photo.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300 });
+      } else {
+        if (photo) photo.style.display = "none";
+        emojiEl.textContent = value;
+        emojiEl.animate([
+          { transform: "scale(0.6) rotate(-10deg)", opacity: 0 },
+          { transform: "scale(1) rotate(0)", opacity: 1 },
+        ], { duration: 350, easing: "cubic-bezier(0.34,1.56,0.64,1)" });
+      }
     }
     document.querySelectorAll(".pd-thumb").forEach((t) => t.classList.remove("active"));
     thumbEl.classList.add("active");

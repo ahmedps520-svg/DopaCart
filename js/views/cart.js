@@ -29,7 +29,7 @@ DC.views.cart = (() => {
       <div class="row"><span>Subtotal</span><b data-t="sub">${U.money(t.subtotal)}</b></div>
       ${t.discount ? `<div class="row discount"><span>Coupon (${coupon})</span><b>−${U.money(t.discount)}</b></div>` : ""}
       <div class="row"><span>Delivery</span>${t.freeShip ? '<span class="free">FREE 🎉</span>' : `<b>${U.money(t.delivery)}</b>`}</div>
-      <div class="row"><span>Taxes (fictional 8%)</span><b>${U.money(t.tax)}</b></div>
+      <div class="row"><span>VAT (fictional 15%)</span><b>${U.money(t.tax)}</b></div>
       <div class="row grand"><span>Total</span><span data-t="grand">${U.money(t.total)}</span></div>`;
   };
 
@@ -61,7 +61,7 @@ DC.views.cart = (() => {
         return `
         <div class="cart-line" data-line="${it.p.id}" style="animation-delay:${i * 0.05}s">
           <div class="p-img" style="${UI.gradStyle(it.p)}" data-action="open-product" data-id="${it.p.id}">
-            <span class="p-emoji">${it.p.emoji}</span>
+            <span class="p-emoji">${it.p.emoji}</span>${UI.photoHtml(it.p)}
           </div>
           <div class="info">
             <div class="nm">${U.esc(it.p.name)}</div>
