@@ -123,6 +123,7 @@ DC.views.rewards = (() => {
     if (spinning || !S.useSpin()) return;
     spinning = true;
     U.haptic(15);
+    DC.sound.spinTicks(4300);          // ratchet that slows with the wheel
 
     // Weighted pick, then land the wheel on that segment.
     const totalW = SEGMENTS.reduce((a, s) => a + s.weight, 0);
@@ -142,6 +143,7 @@ DC.views.rewards = (() => {
       const seg = SEGMENTS[idx];
       const msg = seg.apply();
       U.haptic([30, 40, 30]);
+      DC.sound.play("sparkle");        // win sound, distinct from the box
       U.confetti({ count: 90 });
       UI.modal(`
         <div class="reward-burst">${seg.emoji}</div>
@@ -172,6 +174,7 @@ DC.views.rewards = (() => {
     if (!S.openBox()) return;
     const el = document.getElementById("box-emoji");
     U.haptic([20, 30, 20, 30]);
+    DC.sound.play("shimmer");          // magical rise, distinct from the spin win
     if (el) { el.classList.remove("ready"); el.classList.add("opening"); }
 
     setTimeout(() => {

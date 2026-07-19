@@ -32,6 +32,7 @@ DC.store = (() => {
     notifs: [],
     theme: "crimson",
     unlockedThemes: ["crimson"],
+    sound: true,
   });
 
   /* ── Load / save ────────────────────────────────────────── */
@@ -110,6 +111,7 @@ DC.store = (() => {
       save();
       U.haptic([30, 60, 30]);
       U.confetti({ count: 160 });
+      DC.sound?.play("levelup");
       pushNotif("🏆", `Level ${after} reached!`, `${levelTitle(after)} · +SAR ${cash} · +${coins} coins · +1 spin`, true);
       DC.app?.showLevelUp?.(after);
       // Any level-gated themes at or below the new level unlock now
@@ -315,6 +317,7 @@ DC.store = (() => {
       if (!o.deliveredNotified && orderProgress(o).pct >= 1) {
         o.deliveredNotified = true;
         save();
+        DC.sound?.play("dingdong");
         pushNotif("✅", "Order delivered!", `${o.num} has arrived. Enjoy your imaginary haul!`);
         addXP(25);
       }
@@ -370,6 +373,7 @@ DC.store = (() => {
         s.coins += 50; s.cash += 400;                     // flat reward, no XP (avoids loops)
         save();
         U.haptic([20, 40, 20]);
+        DC.sound?.play("badge");
         pushNotif(a.emoji, "Badge unlocked: " + a.name, "+SAR 400 · +50 coins");
       }
     });

@@ -40,6 +40,11 @@ DC.views.settings = (() => {
     </div>
 
     <div class="set-group glass">
+      <button class="set-row" data-action="toggle-sound">
+        <span class="s-e">🔊</span><span class="s-t">Sound Effects</span>
+        <span class="s-v">${S.s.sound !== false ? "On" : "Off"}</span>
+        <span class="s-arrow">›</span>
+      </button>
       <button class="set-row" data-action="enable-notifs">
         <span class="s-e">🔔</span><span class="s-t">Notifications</span>
         <span class="s-v">${notifState === "granted" ? "On" : notifState === "denied" ? "Blocked" : notifState === "unsupported" ? "N/A" : "Enable"}</span>

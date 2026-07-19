@@ -1,13 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════
    DopaCart — sw.js
-   Service worker: precaches the whole app for full offline use.
-   Cache-first for same-origin requests, with a navigation
-   fallback to index.html (works on GitHub Pages subpaths).
+   Service worker: NETWORK-FIRST for everything same-origin, so
+   updates always land immediately when online. The cache is only
+   the offline fallback (precached at install, refreshed on every
+   successful fetch). Works on GitHub Pages subpaths.
    ═══════════════════════════════════════════════════════════════ */
 
-// Bump this version whenever any precached file changes — it is what
-// triggers installed clients to fetch the new build.
-const CACHE = "dopacart-v1.1.0";
+// Version only names the cache generation; updates no longer depend
+// on bumping it (network-first serves fresh files regardless).
+const CACHE = "dopacart-v1.3.0";
 
 const ASSETS = [
   "./",
@@ -16,6 +17,7 @@ const ASSETS = [
   "./css/base.css",
   "./css/components.css",
   "./js/utils.js",
+  "./js/sound.js",
   "./js/data.js",
   "./js/state.js",
   "./js/components.js",
@@ -49,31 +51,32 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-/* Fetch: cache-first for same-origin; navigations fall back to the shell. */
+/* Fetch: network-first for same-origin. Fresh files always win; every
+   successful response refreshes the offline copy; the cache only
+   answers when the network is unreachable. */
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
-  if (url.origin !== location.origin) return;   // app makes no external requests anyway
+  if (url.origin !== location.origin) return;   // external images bypass the SW
 
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request)
-        .then((response) => {
-          // Runtime-cache anything new we happen to fetch.
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => {
-          // Offline navigation → serve the app shell.
+    fetch(request)
+      .then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      })
+      .catch(() =>
+        caches.match(request).then((cached) => {
+          if (cached) return cached;
+          // Offline navigation with nothing cached → serve the app shell.
           if (request.mode === "navigate") return caches.match("./index.html");
           return Response.error();
-        });
-    })
+        })
+      )
   );
 });

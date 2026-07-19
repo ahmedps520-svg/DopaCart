@@ -126,6 +126,7 @@ DC.app = (() => {
     const r = S.claimDaily();
     if (!r) { U.toast("Already claimed", "Come back tomorrow!", "🌙"); return; }
     U.haptic([25, 40, 25]);
+    DC.sound.play("chime");
     U.confetti({ count: 130 });
     UI.modal(`
       <div class="reward-burst">🔥</div>
@@ -175,6 +176,7 @@ DC.app = (() => {
     if (!p) return;
     S.addToCart(id, qty);
     U.haptic(12);
+    DC.sound.play("pop");
     UI.flyToCart(fromEl, p.emoji);
     S.addXP(3);
     U.toast("Added to cart", p.name, "🛒", 1800);
@@ -194,6 +196,7 @@ DC.app = (() => {
       el.textContent = faved ? "❤️" : "🤍";
       el.classList.toggle("faved", faved);
       if (faved) {
+        DC.sound.play("pluck");
         S.addXP(5, e.clientX, e.clientY - 30);
         U.toast("Favorited!", DC.data.byId(el.dataset.id).name, "❤️", 1500);
       }
@@ -236,6 +239,13 @@ DC.app = (() => {
     "clear-notifs": () => { S.s.notifs = []; S.save(); UI.closeModal(); refreshBadges(); },
     "flash-sheet": () => openFlashSheet(),
 
+    "toggle-sound": () => {
+      S.s.sound = S.s.sound === false;
+      S.save();
+      if (S.s.sound) DC.sound.play("pop");   // audible confirmation when re-enabled
+      render();
+      U.toast("Sound effects " + (S.s.sound ? "on" : "off"), "", S.s.sound ? "🔊" : "🔇");
+    },
     "set-theme": (el) => DC.views.settings.setTheme(el.dataset.id),
     "buy-theme": (el) => DC.views.settings.buyTheme(el.dataset.id),
     "enable-notifs": () => DC.views.settings.enableNotifs(),
@@ -289,11 +299,30 @@ DC.app = (() => {
   };
 
   const registerSW = () => {
-    if ("serviceWorker" in navigator && location.protocol !== "file:") {
-      navigator.serviceWorker.register("./sw.js").catch(() => {
-        /* offline mode unavailable — the app still works */
-      });
-    }
+    if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
+
+    // updateViaCache:'none' → the browser always fetches sw.js fresh,
+    // so a deployed update is noticed on the very next visit.
+    navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" })
+      .then((reg) => {
+        const check = () => reg.update().catch(() => {});
+        // Re-check whenever the app comes back to the foreground, and hourly.
+        document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
+        setInterval(check, 60 * 60000);
+      })
+      .catch(() => { /* offline mode unavailable — the app still works */ });
+
+    // When an updated worker takes control, reload once so the fresh
+    // files actually render. Guarded so the first-ever install (no
+    // previous controller) and repeat events never cause a loop.
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadController || reloaded) return;
+      reloaded = true;
+      try { sessionStorage.setItem("dopacart-updated", "1"); } catch (_) {}
+      location.reload();
+    });
   };
 
   /* ── Tickers ────────────────────────────────────────────── */
@@ -341,6 +370,14 @@ DC.app = (() => {
   /* ── Boot ───────────────────────────────────────────────── */
   const boot = () => {
     registerSW();
+
+    // Post-update confirmation (set just before the auto-reload above).
+    try {
+      if (sessionStorage.getItem("dopacart-updated")) {
+        sessionStorage.removeItem("dopacart-updated");
+        setTimeout(() => U.toast("App updated!", "You're on v" + D.VERSION + " ✨", "🚀"), 1200);
+      }
+    } catch (_) { /* storage unavailable — skip the toast */ }
 
     // Welcome-back economy
     const away = S.collectAwayEarnings();

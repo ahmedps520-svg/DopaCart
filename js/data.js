@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.1.0";
+  const VERSION = "1.3.0";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -353,6 +353,9 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.3.0", notes: ["Fixed stale caching — updates now load automatically", "Network-first: fresh files whenever online, cache only as offline fallback", "App auto-reloads once when a new version arrives (with a toast)"] },
+    { v: "1.2.1", notes: ["New app icon: cart + lightning bolt (replaces the plain \"D\")"] },
+    { v: "1.2.0", notes: ["Sound effects: spin ratchet, checkout fanfare, reward chimes & shimmers", "Each reward type has its own distinct sound", "Sound toggle in Settings"] },
     { v: "1.1.0", notes: ["Prices now in Saudi Riyals (SAR) with 15% VAT", "Real product photos across the catalog", "Real brand names — incl. Saudi favorites in Food & Drinks", "Hair Care is now the full BASED Bodyworks lineup (based.com)", "Economy rebalanced for SAR"] },
     { v: "1.0.0", notes: ["Initial release", "10 categories, 100+ fictional products", "Live order tracking with fake map", "Rewards: XP, coins, streaks, spins, mystery boxes", "5 unlockable themes", "Full offline support (PWA)"] },
   ];

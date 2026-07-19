@@ -147,9 +147,11 @@ DC.views.cart = (() => {
     if (D.COUPONS[code]) {
       coupon = code;
       U.haptic([15, 30, 15]);
+      DC.sound.play("zip");
       DC.app.render();
       U.toast("Coupon applied!", D.COUPONS[code].label + " — nice find", "🎉");
     } else {
+      DC.sound.play("buzz");
       input.animate([
         { transform: "translateX(0)" }, { transform: "translateX(-8px)" },
         { transform: "translateX(8px)" }, { transform: "translateX(0)" },
@@ -164,6 +166,7 @@ DC.views.cart = (() => {
     if (!S.cartItems().length) return;
 
     if (S.s.cash < t.total) {
+      DC.sound.play("buzz");
       UI.modal(`
         <div class="reward-burst">💸</div>
         <h3 style="margin:8px 0 6px">Not enough DopaCash</h3>
@@ -222,6 +225,7 @@ DC.views.cart = (() => {
       coupon = null;
       const o = result.order;
       U.haptic([30, 50, 30, 50, 60]);
+      DC.sound.play("fanfare");        // order created 🎉
       U.confetti({ count: 180 });
       // Refresh the (now empty) cart view behind the sheet so dismissing
       // the modal by tapping the backdrop never reveals stale content.
