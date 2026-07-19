@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>DopaCart — Shopping, Minus the Shopping</title>
+  <meta name="description" content="DopaCart is a 100% fictional shopping experience. No real money, no real products — just pure dopamine.">
+  <meta name="theme-color" content="#000000">
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DopaCart">
+
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+</head>
+<body data-theme="crimson">
+
+  <!-- ═══ Splash screen ═══ -->
+  <div id="splash" class="splash" aria-hidden="true">
+    <div class="splash-logo">
+      <div class="splash-mark">D</div>
+      <div class="splash-name">DopaCart</div>
+      <div class="splash-tag">shopping, minus the shopping</div>
+    </div>
+  </div>
+
+  <!-- ═══ App shell ═══ -->
+  <div class="app">
+    <main id="view" class="view" role="main"></main>
+
+    <nav class="tabbar" role="navigation" aria-label="Main">
+      <button class="tab" data-action="nav" data-route="home" aria-label="Home">
+        <span class="tab-icon">🏠</span><span class="tab-label">Home</span>
+      </button>
+      <button class="tab" data-action="nav" data-route="browse" aria-label="Shop">
+        <span class="tab-icon">🛍️</span><span class="tab-label">Shop</span>
+      </button>
+      <button class="tab tab-cart" data-action="nav" data-route="cart" aria-label="Cart">
+        <span class="tab-icon">🛒</span><span class="tab-label">Cart</span>
+        <span class="tab-badge" id="cart-badge" hidden>0</span>
+      </button>
+      <button class="tab" data-action="nav" data-route="orders" aria-label="Orders">
+        <span class="tab-icon">📦</span><span class="tab-label">Orders</span>
+        <span class="tab-badge tab-badge-dot" id="orders-dot" hidden></span>
+      </button>
+      <button class="tab" data-action="nav" data-route="rewards" aria-label="Rewards">
+        <span class="tab-icon">🎁</span><span class="tab-label">Rewards</span>
+        <span class="tab-badge tab-badge-dot" id="rewards-dot" hidden></span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ═══ Overlays ═══ -->
+  <div id="modal-root"></div>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+  <canvas id="confetti-canvas" class="confetti-canvas" aria-hidden="true"></canvas>
+
+  <!-- ═══ Scripts (classic scripts — works from file:// and GitHub Pages) ═══ -->
+  <script src="./js/utils.js"></script>
+  <script src="./js/data.js"></script>
+  <script src="./js/state.js"></script>
+  <script src="./js/components.js"></script>
+  <script src="./js/views/home.js"></script>
+  <script src="./js/views/browse.js"></script>
+  <script src="./js/views/product.js"></script>
+  <script src="./js/views/cart.js"></script>
+  <script src="./js/views/orders.js"></script>
+  <script src="./js/views/rewards.js"></script>
+  <script src="./js/views/settings.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
