@@ -58,6 +58,17 @@ DC.views.settings = (() => {
     </div>
 
     <div class="set-group glass">
+      <button class="set-row" data-action="show-returns">
+        <span class="s-e">↩️</span><span class="s-t">Returns & Refunds</span>
+        <span class="s-v">${S.returnableOrders().length} eligible</span>
+        <span class="s-arrow">›</span>
+      </button>
+      <button class="set-row" data-action="show-complaint">
+        <span class="s-e">📮</span><span class="s-t">File a Complaint</span><span class="s-arrow">›</span>
+      </button>
+    </div>
+
+    <div class="set-group glass">
       <button class="set-row" data-action="show-about">
         <span class="s-e">✨</span><span class="s-t">About DopaCart</span><span class="s-arrow">›</span>
       </button>
@@ -187,6 +198,94 @@ DC.views.settings = (() => {
     </div>
     <button class="btn btn-glass btn-block" data-action="close-modal">Close</button>`);
 
+  /* ── Support: returns + complaints ──────────────────────── */
+  const showReturns = () => {
+    const eligible = S.returnableOrders();
+    UI.modal(`
+      <h3 style="text-align:center;margin-bottom:4px">↩️ Returns & Refunds</h3>
+      <p class="center tiny muted" style="margin-bottom:14px">Delivered orders get a full DopaCash refund. No questions, no labels, no drop-off.</p>
+      ${eligible.length
+        ? eligible.map((o, i) => `
+          <div class="notif-item" style="animation-delay:${i * 0.05}s">
+            <span class="n-e">📦</span>
+            <div style="flex:1">
+              <div class="n-t">${o.num}</div>
+              <div class="n-m">${o.items.reduce((a, b) => a + b.qty, 0)} items · ${U.money(o.totals.total)}</div>
+              <div class="n-time">Delivered ${U.timeAgo(o.createdAt + o.duration)}</div>
+            </div>
+            <button class="btn btn-sm btn-danger" data-action="do-return" data-id="${o.id}">Return</button>
+          </div>`).join("")
+        : `<div class="empty-state" style="padding:26px"><div class="emoji">📭</div><h3>Nothing to return</h3><p>Only delivered orders can be returned — and yours are all keepers so far.</p></div>`}
+      <button class="btn btn-glass btn-block" data-action="close-modal">Close</button>`);
+  };
+
+  const doReturn = (orderId) => {
+    const o = S.s.orders.find((x) => x.id === orderId);
+    if (!o) return;
+    UI.modal(`
+      <div class="reward-burst">↩️</div>
+      <h3 style="margin:8px 0 6px">Return ${o.num}?</h3>
+      <p class="muted" style="font-size:13.5px;margin-bottom:16px">
+        ${U.money(o.totals.total)} goes straight back to your DopaCash.<br>
+        The imaginary courier will pretend to pick it up.
+      </p>
+      <button class="btn btn-primary btn-block" data-action="confirm-return" data-id="${o.id}">Refund me · ${U.money(o.totals.total)}</button>
+      <div style="height:8px"></div>
+      <button class="btn btn-ghost btn-block" data-action="close-modal">Keep it</button>
+    `, "dialog");
+  };
+
+  const confirmReturn = (orderId) => {
+    const o = S.returnOrder(orderId);
+    UI.closeModal();
+    if (!o) { U.toast("Can't return that", "Order not eligible", "🤔"); return; }
+    U.haptic([15, 30, 15]);
+    DC.sound.play("zip");
+    U.toast("Refund issued!", U.money(o.totals.total) + " is back in your wallet", "💸");
+    DC.app.render();
+  };
+
+  const showComplaint = () => {
+    UI.modal(`
+      <h3 style="text-align:center;margin-bottom:4px">📮 File a Complaint</h3>
+      <p class="center tiny muted" style="margin-bottom:14px">Our fictional support team takes every complaint very seriously, then closes it lovingly.</p>
+      <div class="chip-row" id="complaint-topic">
+        ${["Order", "Delivery", "App", "Vibes"].map((t, i) => `
+          <button class="chip ${i === 0 ? "active" : ""}" data-action="complaint-topic" data-id="${t}">${t}</button>`).join("")}
+      </div>
+      <textarea class="field" id="complaint-text" rows="4" maxlength="500"
+        placeholder="Tell us everything. The courier looked at you funny? We're on it." style="resize:none;margin-top:4px"></textarea>
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-block" data-action="submit-complaint">Submit Complaint</button>
+      <p class="center tiny muted" style="margin-top:10px">First complaint of the day earns 50 coins for your troubles. 🪙</p>`);
+  };
+
+  const submitComplaint = () => {
+    const box = document.getElementById("complaint-text");
+    const text = (box?.value || "").trim();
+    if (!text) {
+      box?.animate([
+        { transform: "translateX(0)" }, { transform: "translateX(-8px)" },
+        { transform: "translateX(8px)" }, { transform: "translateX(0)" },
+      ], { duration: 300 });
+      U.toast("Empty complaint", "Even fictional support needs details", "📝");
+      return;
+    }
+    const topic = document.querySelector("#complaint-topic .chip.active")?.dataset.id || "General";
+    const { ticket, comp } = S.fileComplaint(`[${topic}] ${text}`);
+    U.haptic([15, 30, 15]);
+    DC.sound.play("chime");
+    UI.modal(`
+      <div class="reward-burst">📮</div>
+      <h3 style="margin:6px 0 2px">Complaint filed!</h3>
+      <div class="reward-amount" style="font-size:22px">Ticket ${ticket}</div>
+      <p class="muted" style="font-size:13.5px;margin-bottom:16px">
+        ${comp ? `+${comp} coins for the inconvenience. ` : ""}A fictional agent will pretend to review it shortly.
+      </p>
+      <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Feel heard</button>
+    `, "dialog");
+  };
+
   /* ── Data management ────────────────────────────────────── */
   const exportData = () => {
     const blob = new Blob([S.exportData()], { type: "application/json" });
@@ -265,6 +364,7 @@ DC.views.settings = (() => {
   return {
     html, setTheme, buyTheme,
     showAbout, showChangelog, showPrivacy, showCredits,
+    showReturns, doReturn, confirmReturn, showComplaint, submitComplaint,
     exportData, importData, clearData, confirmClear, enableNotifs,
   };
 })();

@@ -332,6 +332,42 @@ DC.store = (() => {
     });
   };
 
+  /* ── Support: returns + complaints ──────────────────────── */
+  // Delivered orders that haven't been returned yet.
+  const returnableOrders = () =>
+    s.orders.filter((o) => orderProgress(o).pct >= 1 && !o.returned);
+
+  const returnOrder = (orderId) => {
+    const o = s.orders.find((x) => x.id === orderId);
+    if (!o || o.returned || orderProgress(o).pct < 1) return null;
+    o.returned = true;
+    o.returnedAt = Date.now();
+    s.cash += o.totals.total;                             // full refund
+    save();
+    pushNotif("↩️", "Refund issued", `${o.num} refunded — ${U.money(o.totals.total)} is back in your wallet.`, true);
+    DC.app?.refreshBadges?.();
+    return o;
+  };
+
+  // Fake support ticket. Small coin compensation once per day so
+  // complaining stays satisfying but not farmable.
+  const fileComplaint = (text) => {
+    const ticket = "SUP-" + String(10000 + (U.hash(U.uid()) % 90000));
+    let comp = 0;
+    if (s.lastComplaintComp !== todayStr()) {
+      s.lastComplaintComp = todayStr();
+      comp = 50;
+      s.coins += comp;
+    }
+    save();
+    pushNotif("📮", "Complaint received", `Ticket ${ticket} filed.${comp ? ` +${comp} coins for the inconvenience.` : ""}`, true);
+    // The fictional support team "responds" a little later.
+    setTimeout(() => {
+      pushNotif("💬", "Support update", `Ticket ${ticket}: we investigated thoroughly. Everything is fictional. Ticket closed with love. 💙`);
+    }, 45000);
+    return { ticket, comp };
+  };
+
   /* ── Mystery box + spins ────────────────────────────────── */
   const boxReady = () => Date.now() >= s.boxReadyAt;
 
@@ -433,6 +469,7 @@ DC.store = (() => {
     isFav, toggleFav, bump, topInterests, recordView,
     cartCount, addToCart, setQty, cartItems, cartTotals,
     STAGES, placeOrder, orderProgress, activeOrders, sweepDeliveries,
+    returnableOrders, returnOrder, fileComplaint,
     boxReady, openBox, useSpin,
     ACH, checkAch,
     exportData, importData, clearData,

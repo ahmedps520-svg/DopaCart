@@ -18,7 +18,9 @@ DC.views.orders = (() => {
       data-action="track-order" data-id="${o.id}">
       <div class="oc-top">
         <span class="oc-id">${o.num}</span>
-        <span class="oc-status ${done ? "done" : ""}">${done ? "✅ Delivered" : prog.stage.emoji + " " + prog.stage.label}</span>
+        <span class="oc-status ${done ? "done" : ""}" ${o.returned ? 'style="background:var(--surface-2);color:var(--text-2)"' : ""}>
+          ${o.returned ? "↩️ Returned" : done ? "✅ Delivered" : prog.stage.emoji + " " + prog.stage.label}
+        </span>
       </div>
       <div class="oc-items">
         ${o.items.slice(0, 5).map((it) => {

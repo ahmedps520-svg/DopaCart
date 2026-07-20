@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.4.1";
+  const VERSION = "1.5.0";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -140,36 +140,39 @@ DC.data = (() => {
     ],
     apple: [
       ["iPhone 17 Pro Max", 5399, "📱", "iPhone", ["hot", "bestseller"], "The biggest, longest-lasting iPhone ever made. Your pocket will adjust.", ap("v/iphone-17-pro/g/images/meta/iphone-17-pro_overview__eumhhclcpuaa_og.png"), null,
-        { Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400], ["2TB", 3200]] }],
+        { Color: [["Cosmic Orange", 0], ["Deep Blue", 0], ["Silver", 0]], Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400], ["2TB", 3200]] }],
       ["iPhone 17 Pro", 4699, "📱", "iPhone", ["trending"], "Pro cameras, pro chip, pro everything — minus the Max wingspan.", ap("v/iphone-17-pro/g/images/meta/iphone-17-pro_overview__eumhhclcpuaa_og.png"), null,
-        { Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400]] }],
+        { Color: [["Cosmic Orange", 0], ["Deep Blue", 0], ["Silver", 0]], Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400]] }],
       ["iPhone 17", 3399, "📱", "iPhone", ["bestseller"], "All the essentials, none of the compromises. The people's iPhone.", ap("v/iphone-17/g/images/meta/iphone-17_overview__cg0rlzmbhl7m_og.png"), null,
-        { Storage: [["256GB", 0], ["512GB", 500]] }],
+        { Color: [["Black", 0], ["White", 0], ["Mist Blue", 0], ["Sage", 0], ["Lavender", 0]], Storage: [["256GB", 0], ["512GB", 500]] }],
       ["iPhone Air", 4199, "📱", "iPhone", ["new", "hot"], "Impossibly thin. You'll keep checking your pocket to make sure it's there.", ap("v/iphone-air/g/images/meta/iphone-air_overview__dwhg6l117yqa_og.png"), null,
-        { Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400]] }],
+        { Color: [["Sky Blue", 0], ["Space Black", 0], ["Cloud White", 0], ["Light Gold", 0]], Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400]] }],
       ["iPad Pro", 4199, "📲", "iPad", ["staff"], "M-series power in a slab of glass thinner than your excuses for buying it.", ap("v/ipad-pro/aw/images/meta/ipad-pro_overview__bu4cql27diaa_og.png"), null,
-        { Size: [["11-inch", 0], ["13-inch", 1300]], Storage: [["256GB", 0], ["512GB", 400], ["1TB", 1500], ["2TB", 3000]] }],
+        { Color: [["Space Black", 0], ["Silver", 0]], Size: [["11-inch", 0], ["13-inch", 1300]], Storage: [["256GB", 0], ["512GB", 400], ["1TB", 1500], ["2TB", 3000]] }],
       ["iPad Air", 2499, "📲", "iPad", ["trending"], "The sweet spot. Powerful enough for everything, light enough for anywhere.", ap("v/ipad-air/ah/images/meta/ipad-air_overview__bc2fd15uec0y_og.png"), null,
-        { Size: [["11-inch", 0], ["13-inch", 800]], Storage: [["128GB", 0], ["256GB", 400], ["512GB", 800], ["1TB", 1600]] }],
+        { Color: [["Space Gray", 0], ["Blue", 0], ["Purple", 0], ["Starlight", 0]], Size: [["11-inch", 0], ["13-inch", 800]], Storage: [["128GB", 0], ["256GB", 400], ["512GB", 800], ["1TB", 1600]] }],
       ["iPad mini", 2099, "📲", "iPad", [], "Full iPad brain, paperback body. The one-handed doomscroll champion.", ap("v/ipad-mini/v/images/meta/ipad-mini_overview__cxipvq7fs1ci_og.png"), null,
-        { Storage: [["128GB", 0], ["256GB", 400], ["512GB", 800]] }],
+        { Color: [["Space Gray", 0], ["Blue", 0], ["Purple", 0], ["Starlight", 0]], Storage: [["128GB", 0], ["256GB", 400], ["512GB", 800]] }],
       ["iPad 11-inch (A16)", 1449, "📲", "iPad", ["bestseller"], "The entry ticket to the ecosystem. Students and note-takers, assemble.", ap("v/ipad-11/d/images/meta/ipad-11_overview__brh97xhhd8b6_og.png"), null,
-        { Storage: [["128GB", 0], ["256GB", 350], ["512GB", 750]] }],
+        { Color: [["Silver", 0], ["Blue", 0], ["Pink", 0], ["Yellow", 0]], Storage: [["128GB", 0], ["256GB", 350], ["512GB", 750]] }],
       ["Apple Vision Pro", 14999, "🥽", "Vision", ["limited", "hot"], "Spatial computing strapped to your face. Reality, but with a settings menu.", ap("v/apple-vision-pro/k/images/meta/apple-vision-pro-us__f28gp8ey4vam_og.png"), null,
         { Storage: [["256GB", 0], ["512GB", 800], ["1TB", 1600]] }],
       ["MacBook Air", 4399, "💻", "Mac", ["bestseller"], "Fanless, silent, and faster than laptops twice its price. The default answer.", ap("v/macbook-air/z/images/meta/macbook_air_mx__ez5y0k5yy7au_og.png"), null,
-        { Size: [["13-inch", 0], ["15-inch", 800]], Storage: [["256GB", 0], ["512GB", 800], ["1TB", 1600]] }],
+        { Color: [["Sky Blue", 0], ["Midnight", 0], ["Starlight", 0], ["Silver", 0]], Size: [["13-inch", 0], ["15-inch", 800]], Storage: [["256GB", 0], ["512GB", 800], ["1TB", 1600]] }],
       ["MacBook Pro", 6999, "💻", "Mac", ["staff"], "The one the pros actually use. Battery life measured in workdays, not hours.", ap("v/macbook-pro/ax/images/meta/macbook-pro__difvbgz1plsi_og.png"), null,
-        { Size: [["14-inch", 0], ["16-inch", 2000]], Storage: [["512GB", 0], ["1TB", 800], ["2TB", 2400]] }],
+        { Color: [["Space Black", 0], ["Silver", 0]], Size: [["14-inch", 0], ["16-inch", 2000]], Storage: [["512GB", 0], ["1TB", 800], ["2TB", 2400]] }],
       ["Apple Watch Series 11", 1699, "⌚", "Watch", ["trending"], "Closes your rings, reads your heart, and politely tells you to stand up.", ap("v/apple-watch-series-11/c/images/meta/apple-watch-series-11__cim89z1i9spe_og.png"), null,
-        { Size: [["42mm", 0], ["46mm", 130]] }],
-      ["Apple Watch Ultra 3", 3399, "⌚", "Watch", ["hot"], "Built for oceans and mountains. Worn mostly to meetings. No judgment.", ap("v/apple-watch-ultra-3/b/images/meta/apple-watch-ultra-3__y7lxayrwmlem_og.png")],
+        { Color: [["Jet Black", 0], ["Silver", 0], ["Rose Gold", 0], ["Space Gray", 0]], Size: [["42mm", 0], ["46mm", 130]] }],
+      ["Apple Watch Ultra 3", 3399, "⌚", "Watch", ["hot"], "Built for oceans and mountains. Worn mostly to meetings. No judgment.", ap("v/apple-watch-ultra-3/b/images/meta/apple-watch-ultra-3__y7lxayrwmlem_og.png"), null,
+        { Color: [["Natural Titanium", 0], ["Black Titanium", 0]] }],
       ["Apple Watch SE 3", 999, "⌚", "Watch", ["new"], "The essentials on your wrist without the flagship price tag.", ap("v/apple-watch-se-3/b/images/meta/apple-watch-se-3__d0wwc67lzg02_og.png"), null,
-        { Size: [["40mm", 0], ["44mm", 120]] }],
+        { Color: [["Midnight", 0], ["Starlight", 0]], Size: [["40mm", 0], ["44mm", 120]] }],
       ["AirPods Pro 3", 999, "🎵", "Audio", ["bestseller"], "Noise cancellation strong enough to mute an entire open office.", ap("v/airpods-pro/s/images/meta/og__c0ceegchesom_overview.png")],
-      ["AirPods Max 2", 2299, "🎧", "Audio", [], "Over-ear luxury with a carrying case nobody understands. Sounds incredible though.", ap("v/airpods-max/k/images/meta/airpods-max_overview__c2mz40a3bugm_og.png")],
+      ["AirPods Max 2", 2299, "🎧", "Audio", [], "Over-ear luxury with a carrying case nobody understands. Sounds incredible though.", ap("v/airpods-max/k/images/meta/airpods-max_overview__c2mz40a3bugm_og.png"), null,
+        { Color: [["Midnight", 0], ["Starlight", 0], ["Blue", 0], ["Purple", 0], ["Orange", 0]] }],
       ["AirTag (4-Pack)", 449, "📍", "Accessories", [], "Attach to keys, wallet, remote, and your sense of direction.", ap("v/airtag/g/images/meta/og__ck3n0k1jl6j6.png")],
-      ["HomePod mini", 449, "🔮", "Accessories", [], "A grapefruit-sized speaker that runs your whole imaginary smart home.", ap("v/homepod-mini/j/images/meta/homepod-mini__bnxwvz5xrtpy_og.png")],
+      ["HomePod mini", 449, "🔮", "Accessories", [], "A grapefruit-sized speaker that runs your whole imaginary smart home.", ap("v/homepod-mini/j/images/meta/homepod-mini__bnxwvz5xrtpy_og.png"), null,
+        { Color: [["White", 0], ["Midnight", 0], ["Blue", 0], ["Orange", 0], ["Yellow", 0]] }],
       ["Apple Studio Display", 6499, "🖥️", "Mac", ["staff"], "5K glass so sharp you'll see pixels in your dreams. Speakers hiding a whole cinema.", ap("v/studio-display/f/images/meta/studio-display_overview__cc7vair07fjm_og.png")],
     ],
     tech: [
@@ -415,6 +418,7 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.5.0", notes: ["Color options for Apple products — real colorways per model", "Support section in Settings: Returns & Refunds (full DopaCash back on delivered orders)", "File a Complaint — fictional tickets, real coin compensation (once daily)"] },
     { v: "1.4.1", notes: ["Fixed monitor photo mismatch — now Alienware 27 (matching its picture)", "Added Apple Studio Display with its official image"] },
     { v: "1.4.0", notes: ["New Apple category — iPhone 17 lineup, iPads, Macs, Watch, Vision Pro & more with official images from apple.com", "Choose storage and size options on Apple products", "Buy spins any time (stack as many as you like) + skip the spin animation", "Fixed product photos to match what products actually are", "Removed the Beauty category"] },
     { v: "1.3.0", notes: ["Fixed stale caching — updates now load automatically", "Network-first: fresh files whenever online, cache only as offline fallback", "App auto-reloads once when a new version arrives (with a toast)"] },

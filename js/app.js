@@ -258,6 +258,15 @@ DC.app = (() => {
     "buy-theme": (el) => DC.views.settings.buyTheme(el.dataset.id),
     "enable-notifs": () => DC.views.settings.enableNotifs(),
     "install-app": () => promptInstall(),
+    "show-returns": () => DC.views.settings.showReturns(),
+    "do-return": (el) => DC.views.settings.doReturn(el.dataset.id),
+    "confirm-return": (el) => DC.views.settings.confirmReturn(el.dataset.id),
+    "show-complaint": () => DC.views.settings.showComplaint(),
+    "complaint-topic": (el) => {
+      [...el.parentElement.children].forEach((c) => c.classList.toggle("active", c === el));
+      U.haptic(6);
+    },
+    "submit-complaint": () => DC.views.settings.submitComplaint(),
     "show-about": () => DC.views.settings.showAbout(),
     "show-changelog": () => DC.views.settings.showChangelog(),
     "show-privacy": () => DC.views.settings.showPrivacy(),
