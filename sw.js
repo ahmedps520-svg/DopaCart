@@ -8,7 +8,7 @@
 
 // Version only names the cache generation; updates no longer depend
 // on bumping it (network-first serves fresh files regardless).
-const CACHE = "dopacart-v1.3.0";
+const CACHE = "dopacart-v1.4.0";
 
 const ASSETS = [
   "./",

@@ -23,8 +23,9 @@ DC.sound = (() => {
     }
   };
 
-  /* One enveloped oscillator note. All effects are built from these. */
-  const tone = (freq, { at = 0, dur = 0.15, type = "sine", gain = 0.16, glide = null } = {}) => {
+  /* One enveloped oscillator note. All effects are built from these.
+     Pass a `track` array to collect the nodes for later cancellation. */
+  const tone = (freq, { at = 0, dur = 0.15, type = "sine", gain = 0.16, glide = null } = {}, track = null) => {
     const c = ac();
     if (!c) return;
     const t0 = c.currentTime + at;
@@ -39,6 +40,7 @@ DC.sound = (() => {
     o.connect(g).connect(c.destination);
     o.start(t0);
     o.stop(t0 + dur + 0.05);
+    if (track) track.push(o);
   };
 
   /* ── Effects ────────────────────────────────────────────── */
@@ -111,19 +113,28 @@ DC.sound = (() => {
   };
 
   /* Ratchet ticks that decelerate along with the spin wheel.
-     Scheduled on the audio clock so they never drift. */
+     Scheduled on the audio clock so they never drift. Kept in a
+     list so stopTicks() can cancel them (spin skip). */
+  let tickNodes = [];
+
   const spinTicks = (ms = 4200) => {
     const c = ac();
     if (!c) return;
+    stopTicks();
     const total = ms / 1000;
     let t = 0, i = 0;
     while (t < total - 0.2 && i < 90) {
-      tone(i % 2 ? 2100 : 1700, { at: t, dur: 0.025, type: "square", gain: 0.045 });
+      tone(i % 2 ? 2100 : 1700, { at: t, dur: 0.025, type: "square", gain: 0.045 }, tickNodes);
       // Interval grows as the wheel slows (quadratic ease-out).
       t += 0.035 + Math.pow(t / total, 2) * 0.28;
       i++;
     }
   };
 
-  return { play, spinTicks };
+  const stopTicks = () => {
+    tickNodes.forEach((o) => { try { o.stop(); } catch (_) { /* already done */ } });
+    tickNodes = [];
+  };
+
+  return { play, spinTicks, stopTicks };
 })();

@@ -22,7 +22,7 @@ DC.views.orders = (() => {
       </div>
       <div class="oc-items">
         ${o.items.slice(0, 5).map((it) => {
-          const p = D.byId(it.id);
+          const p = D.byId(D.splitKey(it.key || it.id).id);
           return p ? `<span class="oc-item" style="${DC.ui.gradStyle(p)}">${p.emoji}</span>` : "";
         }).join("")}
         ${o.items.length > 5 ? `<span class="oc-item" style="background:var(--surface-2)">+${o.items.length - 5}</span>` : ""}
@@ -183,9 +183,10 @@ DC.views.track = (() => {
     ${DC.ui.section("Order summary")}
     <div class="set-group glass">
       ${o.items.map((it) => {
-        const p = D.byId(it.id);
+        const { id, opts } = D.splitKey(it.key || it.id);
+        const p = D.byId(id);
         return p ? `<div class="set-row"><span class="s-e">${p.emoji}</span>
-          <div class="s-t">${U.esc(p.name)}<div class="tiny muted">×${it.qty}</div></div>
+          <div class="s-t">${U.esc(p.name)}<div class="tiny muted">${opts.length ? U.esc(opts.join(" · ")) + " · " : ""}×${it.qty}</div></div>
           <span class="s-v">${U.money(it.price * it.qty)}</span></div>` : "";
       }).join("")}
       <div class="set-row"><span class="s-e">📍</span><div class="s-t">Delivering to</div>

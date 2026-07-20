@@ -10,23 +10,9 @@ DC.ui = (() => {
   const U = DC.util;
   const D = DC.data;
 
-  /* ── Flash-sale lookup (cached per day) ─────────────────── */
-  let flashCache = null, flashDay = 0;
-  const flashMap = () => {
-    if (flashDay !== U.daySeed()) {
-      flashDay = U.daySeed();
-      flashCache = {};
-      D.flashSale().forEach((p) => { flashCache[p.id] = p.discount; });
-    }
-    return flashCache;
-  };
-
-  // Effective price after any active flash discount.
-  const priceOf = (p) => {
-    const off = flashMap()[p.id];
-    if (!off) return { price: p.price, was: null, off: 0 };
-    return { price: p.price * (1 - off / 100), was: p.price, off };
-  };
+  // Effective pricing (flash discounts + option deltas) lives in
+  // data.js now so state/cart math uses the exact same numbers.
+  const priceOf = D.priceOf;
 
   /* ── Small pieces ───────────────────────────────────────── */
   const gradStyle = (p) =>

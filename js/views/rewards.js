@@ -86,13 +86,13 @@ DC.views.rewards = (() => {
     ${UI.section("🎡 Lucky Spin", `${S.s.spins} spin${S.s.spins === 1 ? "" : "s"} available`)}
     <div class="glass" style="padding:16px;text-align:center">
       ${wheelHtml()}
-      <button class="btn btn-primary btn-block" data-action="spin" ${S.s.spins > 0 ? "" : "disabled"}>
+      <button class="btn btn-primary btn-block" id="spin-btn" data-action="spin" ${S.s.spins > 0 ? "" : "disabled"}>
         ${S.s.spins > 0 ? `Spin (${S.s.spins} left)` : "No spins left"}
       </button>
-      ${S.s.spins === 0 ? `
-        <div style="height:8px"></div>
-        <button class="btn btn-glass btn-block" data-action="buy-spin">Buy a spin · 100 🪙</button>` : ""}
-      <p class="tiny muted" style="margin-top:10px">Free spin every day, plus one per level-up.</p>
+      <div style="height:8px"></div>
+      <button class="btn btn-ghost btn-block" id="skip-spin-btn" data-action="skip-spin" hidden>Skip animation ⏭️</button>
+      <button class="btn btn-glass btn-block" id="buy-spin-btn" data-action="buy-spin">Buy a spin · 100 🪙</button>
+      <p class="tiny muted" style="margin-top:10px">Free spin every day, plus one per level-up. Stack as many as you like.</p>
     </div>
 
     ${UI.section("📦 Mystery Box")}
@@ -119,6 +119,27 @@ DC.views.rewards = (() => {
   };
 
   /* ── Spin logic ─────────────────────────────────────────── */
+  let pendingSpin = null;              // { timeout, idx } while the wheel turns
+
+  const finishSpin = (idx) => {
+    if (!pendingSpin) return;          // already finished (skip vs timer race)
+    clearTimeout(pendingSpin.timeout);
+    pendingSpin = null;
+    spinning = false;
+    document.getElementById("skip-spin-btn")?.setAttribute("hidden", "");
+    const seg = SEGMENTS[idx];
+    const msg = seg.apply();
+    U.haptic([30, 40, 30]);
+    DC.sound.play("sparkle");          // win sound, distinct from the box
+    U.confetti({ count: 90 });
+    UI.modal(`
+      <div class="reward-burst">${seg.emoji}</div>
+      <div class="reward-amount">${seg.label}</div>
+      <p class="muted" style="font-size:13.5px;margin-bottom:16px">${msg}</p>
+      <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Collect</button>
+    `, "dialog");
+  };
+
   const spin = () => {
     if (spinning || !S.useSpin()) return;
     spinning = true;
@@ -136,30 +157,43 @@ DC.views.rewards = (() => {
     const wheel = document.getElementById("spin-wheel");
     // 5 full revolutions + landing angle (pointer sits at top).
     wheelRotation += 5 * 360 + ((360 - idx * SEG_ANGLE) % 360) - (wheelRotation % 360);
-    if (wheel) wheel.style.transform = `rotate(${wheelRotation}deg)`;
+    if (wheel) {
+      wheel.style.transition = "";     // restore the class transition after any skip
+      wheel.style.transform = `rotate(${wheelRotation}deg)`;
+    }
+    document.getElementById("skip-spin-btn")?.removeAttribute("hidden");
+    const sb = document.getElementById("spin-btn");
+    if (sb) { sb.disabled = true; sb.textContent = "Spinning…"; }
 
-    setTimeout(() => {
-      spinning = false;
-      const seg = SEGMENTS[idx];
-      const msg = seg.apply();
-      U.haptic([30, 40, 30]);
-      DC.sound.play("sparkle");        // win sound, distinct from the box
-      U.confetti({ count: 90 });
-      UI.modal(`
-        <div class="reward-burst">${seg.emoji}</div>
-        <div class="reward-amount">${seg.label}</div>
-        <p class="muted" style="font-size:13.5px;margin-bottom:16px">${msg}</p>
-        <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Collect</button>
-      `, "dialog");
-    }, 4300);
+    pendingSpin = { idx, timeout: setTimeout(() => finishSpin(idx), 4300) };
+  };
+
+  // Jump the wheel straight to its landing spot and pay out now.
+  const skipSpin = () => {
+    if (!pendingSpin) return;
+    DC.sound.stopTicks();
+    const wheel = document.getElementById("spin-wheel");
+    if (wheel) {
+      wheel.style.transition = "none";
+      wheel.style.transform = `rotate(${wheelRotation}deg)`;
+      void wheel.offsetHeight;         // commit the jump before anything else
+    }
+    finishSpin(pendingSpin.idx);
   };
 
   const buySpin = () => {
     if (!S.spendCoins(100)) { U.toast("Not enough coins", "Earn more from orders and boxes", "🪙"); return; }
     S.s.spins += 1; S.save();
     U.haptic(12);
-    DC.app.render();
-    U.toast("Spin purchased!", "May the odds be dopamine-flavored", "🎡");
+    if (spinning) {
+      // Mid-spin: update the labels in place, never interrupt the wheel.
+      const sb = document.getElementById("spin-btn");
+      if (sb) sb.textContent = "Spinning…";
+      U.toast("Spin purchased!", `${S.s.spins} waiting · ${S.s.coins} coins left`, "🎡");
+    } else {
+      DC.app.render();
+      U.toast("Spin purchased!", "May the odds be dopamine-flavored", "🎡");
+    }
   };
 
   /* ── Mystery box ────────────────────────────────────────── */
@@ -234,5 +268,5 @@ DC.views.rewards = (() => {
     return () => clearInterval(iv);
   };
 
-  return { html, mounted, spin, buySpin, openBox, achInfo };
+  return { html, mounted, spin, skipSpin, buySpin, openBox, achInfo };
 })();

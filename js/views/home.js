@@ -22,12 +22,12 @@ DC.views.home = (() => {
     gaming: "Recommended for Gamers",
     hair: "For Your Hair Goals",
     fashion: "Fits You'd Pull Off",
+    apple: "Complete Your Apple Ecosystem",
     tech: "Complete Your Setup",
     fitness: "Fuel Your Grind",
     food: "Because You Got Hungry",
     home: "Your Space Upgrade",
     auto: "Because You Liked Car Gear",
-    beauty: "Your Glow-Up Picks",
     office: "Your Desk Upgrade",
   }[catId] || "Recommended for You");
 

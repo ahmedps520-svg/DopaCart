@@ -56,24 +56,22 @@ DC.views.cart = (() => {
     </div>
 
     <div id="cart-lines">
-      ${items.map((it, i) => {
-        const pr = UI.priceOf(it.p);
-        return `
-        <div class="cart-line" data-line="${it.p.id}" style="animation-delay:${i * 0.05}s">
+      ${items.map((it, i) => `
+        <div class="cart-line" data-line="${U.esc(it.key)}" style="animation-delay:${i * 0.05}s">
           <div class="p-img" style="${UI.gradStyle(it.p)}" data-action="open-product" data-id="${it.p.id}">
             <span class="p-emoji">${it.p.emoji}</span>${UI.photoHtml(it.p)}
           </div>
           <div class="info">
             <div class="nm">${U.esc(it.p.name)}</div>
-            <div class="pr" data-line-price>${U.money(pr.price * it.qty)}</div>
+            ${it.opts.length ? `<div class="tiny muted">${it.opts.map(U.esc).join(" · ")}</div>` : ""}
+            <div class="pr" data-line-price>${U.money(it.unit * it.qty)}</div>
           </div>
           <div class="stepper">
-            <button data-action="cart-qty" data-id="${it.p.id}" data-d="-1" aria-label="Decrease">−</button>
+            <button data-action="cart-qty" data-id="${U.esc(it.key)}" data-d="-1" aria-label="Decrease">−</button>
             <span class="qv" data-line-qty>${it.qty}</span>
-            <button data-action="cart-qty" data-id="${it.p.id}" data-d="1" aria-label="Increase">+</button>
+            <button data-action="cart-qty" data-id="${U.esc(it.key)}" data-d="1" aria-label="Increase">+</button>
           </div>
-        </div>`;
-      }).join("")}
+        </div>`).join("")}
     </div>
 
     <div class="coupon-row">
@@ -95,16 +93,20 @@ DC.views.cart = (() => {
     <p class="center tiny muted">100% fake checkout. Your real wallet is safe. 💤</p>`;
   };
 
-  /* Targeted DOM update on qty change — keeps scroll position. */
-  const changeQty = (id, delta) => {
+  /* Targeted DOM update on qty change — keeps scroll position.
+     `key` may include option labels ("apple-1~256GB"). */
+  const changeQty = (key, delta) => {
     const before = S.cartTotals(coupon).total;
-    const cur = S.s.cart[id] || 0;
+    const cur = S.s.cart[key] || 0;
     const next = cur + delta;
     U.haptic(6);
 
+    const findLine = () =>
+      [...document.querySelectorAll("[data-line]")].find((el) => el.dataset.line === key);
+
     if (next <= 0) {
-      const line = document.querySelector(`[data-line="${id}"]`);
-      S.setQty(id, 0);
+      const line = findLine();
+      S.setQty(key, 0);
       if (line) {
         line.classList.add("removing");
         setTimeout(() => {
@@ -115,12 +117,13 @@ DC.views.cart = (() => {
       return;
     }
 
-    S.setQty(id, next);
-    const line = document.querySelector(`[data-line="${id}"]`);
+    S.setQty(key, next);
+    const line = findLine();
     if (line) {
-      const p = D.byId(id), pr = UI.priceOf(p);
+      const { id, opts } = D.splitKey(key);
+      const unit = D.unitPrice(D.byId(id), opts);
       line.querySelector("[data-line-qty]").textContent = next;
-      line.querySelector("[data-line-price]").textContent = U.money(pr.price * next);
+      line.querySelector("[data-line-price]").textContent = U.money(unit * next);
     }
     refreshTotals(before);
   };
@@ -246,8 +249,11 @@ DC.views.cart = (() => {
           <div class="receipt">
             <div class="r-head">✂️ · · · · Fictional Receipt · · · · ✂️</div>
             ${o.items.map((it) => {
-              const p = D.byId(it.id);
-              return `<div class="r-row"><span>${p.emoji} ${U.esc(p.name)} ×${it.qty}</span><b>${U.money(UI.priceOf(p).price * it.qty)}</b></div>`;
+              const { id, opts } = D.splitKey(it.key || it.id);
+              const p = D.byId(id);
+              if (!p) return "";
+              const label = p.name + (opts.length ? ` (${opts.join(", ")})` : "");
+              return `<div class="r-row"><span>${p.emoji} ${U.esc(label)} ×${it.qty}</span><b>${U.money(it.price * it.qty)}</b></div>`;
             }).join("")}
             <div class="r-row" style="border-top:1px dashed var(--border-strong);margin-top:6px;padding-top:8px">
               <span>Total charged (to nobody)</span><b>${U.money(o.totals.total)}</b>

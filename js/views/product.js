@@ -10,12 +10,15 @@ DC.views.product = (() => {
   const U = DC.util, D = DC.data, S = DC.store, UI = DC.ui;
   let qty = 1;
   let currentId = null;
+  let selOpts = [];                // chosen option label per group, in order
 
   const html = (params) => {
     const p = D.byId(params.id);
     if (!p) return `<div class="empty-state"><div class="emoji">👻</div><h3>Product vanished</h3><p>It was fictional all along.</p></div>`;
     qty = 1;
     currentId = p.id;
+    // Default every option group to its base choice.
+    selOpts = p.options ? Object.values(p.options).map((g) => g[0][0]) : [];
     S.recordView(p.id);
 
     const cat = D.category(p.cat);
@@ -54,9 +57,19 @@ DC.views.product = (() => {
     </div>
 
     <div class="pd-price-row">
-      <span class="pd-price">${U.money(pr.price)}</span>
+      <span class="pd-price" id="pd-price">${U.money(D.unitPrice(p, selOpts))}</span>
       ${pr.was ? `<span class="pd-was">${U.money(pr.was)}</span><span class="pd-off">-${pr.off}% flash</span>` : ""}
     </div>
+
+    ${p.options ? Object.entries(p.options).map(([gname, arr], gi) => `
+      <div style="font-weight:700;font-size:14px;margin:12px 0 8px">${gname}</div>
+      <div class="chip-row">
+        ${arr.map(([label, delta], oi) => `
+          <button class="chip ${oi === 0 ? "active" : ""}" data-action="pd-opt"
+            data-g="${gi}" data-id="${U.esc(label)}">
+            ${U.esc(label)}${delta ? ` · +SAR ${delta.toLocaleString()}` : ""}
+          </button>`).join("")}
+      </div>`).join("") : ""}
 
     <div class="info-cards">
       <div class="info-card"><div class="e">⏱</div><div class="t">Delivery</div><div class="v">${p.mins} min</div></div>
@@ -102,8 +115,17 @@ DC.views.product = (() => {
 
     <div class="buy-bar">
       <button class="btn btn-glass" data-action="add-cart" data-id="${p.id}">🛒 Add to Cart</button>
-      <button class="btn btn-primary" data-action="buy-now" data-id="${p.id}">Buy Now · ${U.money(pr.price * qty)}</button>
+      <button class="btn btn-primary" data-action="buy-now" data-id="${p.id}">Buy Now · ${U.money(D.unitPrice(p, selOpts) * qty)}</button>
     </div>`;
+  };
+
+  /* Reflect current qty + option selection in the price displays. */
+  const refreshPrice = (p) => {
+    const unit = D.unitPrice(p, selOpts);
+    const priceEl = document.getElementById("pd-price");
+    if (priceEl) priceEl.textContent = U.money(unit);
+    const buy = document.querySelector('[data-action="buy-now"]');
+    if (buy) buy.textContent = `Buy Now · ${U.money(unit * qty)}`;
   };
 
   /* Quantity stepper — updates the count and the Buy Now total. */
@@ -116,9 +138,25 @@ DC.views.product = (() => {
       el.textContent = qty;
       el.animate([{ transform: "scale(1.35)" }, { transform: "scale(1)" }], { duration: 200 });
     }
-    const buy = document.querySelector('[data-action="buy-now"]');
-    if (buy) buy.textContent = `Buy Now · ${U.money(UI.priceOf(p).price * qty)}`;
+    refreshPrice(p);
     U.haptic(6);
+  };
+
+  /* Option chip tapped: remember the choice, restyle its group, reprice. */
+  const setOpt = (groupIndex, label, el) => {
+    const p = D.byId(currentId);
+    if (!p || !p.options) return;
+    selOpts[groupIndex] = label;
+    [...el.parentElement.children].forEach((c) => c.classList.toggle("active", c === el));
+    el.animate([{ transform: "scale(0.9)" }, { transform: "scale(1)" }], { duration: 180 });
+    refreshPrice(p);
+    U.haptic(6);
+  };
+
+  // Cart key for the current selection ("id" or "id~256GB~13-inch").
+  const getKey = () => {
+    const p = D.byId(currentId);
+    return p && p.options ? [p.id, ...selOpts].join("~") : currentId;
   };
 
   const getQty = () => qty;
@@ -160,5 +198,5 @@ DC.views.product = (() => {
     <div class="sk sk-line" style="width:45%"></div>
     <div class="sk sk-line" style="width:30%;height:26px;margin-top:14px"></div>
     ${DC.ui.skRow(3)}`,
-    html, changeQty, getQty, setHero };
+    html, changeQty, getQty, setOpt, getKey, setHero };
 })();

@@ -1,24 +1,24 @@
 /* ═══════════════════════════════════════════════════════════════
    DopaCart — data.js
-   The marketplace catalog: categories, products, coupons,
-   drivers, review generators. Prices are in Saudi Riyals (SAR).
+   The marketplace catalog: categories, products, options,
+   coupons, drivers, review generators. Prices in Saudi Riyals.
    Product names reference real brands for flavor; nothing is
-   actually sold and no order is real. Product photos are
-   hotlinked from their sources (see Credits in Settings).
+   actually sold. Photos are hotlinked from their sources
+   (BASED Bodyworks, Apple, Wikimedia, Unsplash — see Credits).
    ═══════════════════════════════════════════════════════════════ */
 
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.3.0";
+  const VERSION = "1.4.1";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
   const wm = (path) => `https://upload.wikimedia.org/wikipedia/commons/${path}`;
   const based = (file) => `https://cdn.shopify.com/s/files/1/0666/0125/5141/files/${file}`;
+  const ap = (path) => `https://www.apple.com/${path}`;
 
   /* ── Categories ─────────────────────────────────────────── */
-  // grad: banner gradient · pal: fallback card gradients (cycled)
   const CATEGORIES = [
     {
       id: "gaming", name: "Gaming", emoji: "🎮", tagline: "Level up your setup",
@@ -40,6 +40,13 @@ DC.data = (() => {
       pal: [["#3a0f2e", "#d6488b"], ["#101c3a", "#4a6cf7"], ["#2e2010", "#c99a3f"], ["#132e22", "#39b678"]],
       subs: ["Clothing", "Shoes", "Accessories"],
       boiler: "The classics that never miss, in the sizes your imagination always stocks.",
+    },
+    {
+      id: "apple", name: "Apple", emoji: "🍎", tagline: "The whole ecosystem",
+      grad: ["#17171c", "#7d7d88"],
+      pal: [["#1a1a20", "#5c5c66"], ["#101828", "#3a6ea8"], ["#221a10", "#a08850"], ["#1a2420", "#4a8a70"]],
+      subs: ["iPhone", "iPad", "Mac", "Watch", "Vision", "Audio", "Accessories"],
+      boiler: "Straight from the fictional Apple Store — pick your storage and size, skip the queue.",
     },
     {
       id: "tech", name: "Technology", emoji: "📱", tagline: "Tomorrow's gadgets, today-ish",
@@ -77,13 +84,6 @@ DC.data = (() => {
       boiler: "Fits every make and model, because nothing ever actually ships. Garage-tested in theory.",
     },
     {
-      id: "beauty", name: "Beauty", emoji: "🧴", tagline: "Glow different",
-      grad: ["#33101f", "#e0568f"],
-      pal: [["#33101f", "#d15488"], ["#101f33", "#4a86d1"], ["#2c2410", "#c9a53a"], ["#0f2e2a", "#35ad96"]],
-      subs: ["Skincare", "Fragrance", "Care"],
-      boiler: "The shelf-care icons your explore page keeps recommending. Gentle on all imaginary skin types.",
-    },
-    {
       id: "office", name: "School & Office", emoji: "📚", tagline: "Organized chaos, organized",
       grad: ["#141b3d", "#5866e0"],
       pal: [["#141b3d", "#5460d1"], ["#0f2e33", "#2ba3ad"], ["#2e1a10", "#c06a35"], ["#25102e", "#9a4ac0"]],
@@ -93,14 +93,15 @@ DC.data = (() => {
   ];
 
   /* ── Products ───────────────────────────────────────────── */
-  // [name, price(SAR), emoji, sub, badges[], blurb, img, hairTypes?]
+  // [name, price(SAR), emoji, sub, badges[], blurb, img, hairTypes?, options?]
+  // options: { GroupName: [[label, priceDelta], …] } — first entry is the base.
   const DEFS = {
     gaming: [
-      ["Sony DualSense Wireless Controller", 279, "🎮", "PlayStation", ["bestseller", "hot"], "Haptics so real you'll feel the rain in the game. Adaptive triggers, zero excuses.", un("1606813907291-d86efa9b94db")],
-      ["Razer BlackWidow V4 Pro", 899, "⌨️", "PC Gaming", ["trending"], "Clicky greens, dedicated macro keys, and enough RGB to be seen from orbit.", un("1587829741301-dc798b83add3")],
+      ["Sony PlayStation 5", 2299, "🎮", "PlayStation", ["bestseller", "hot"], "The white monolith itself. Load times so short you'll miss the loading screens. Almost.", un("1606813907291-d86efa9b94db")],
+      ["Razer BlackWidow V4 Pro", 899, "⌨️", "PC Gaming", ["trending"], "Clicky switches, macro keys, and enough RGB to be seen from orbit.", un("1547394765-185e1e68f34e")],
       ["Logitech G Pro X Superlight 2", 549, "🖱️", "PC Gaming", ["bestseller"], "60 grams of pure aim. If you still miss, that one's on you.", un("1527814050087-3793815479db")],
-      ["SteelSeries QcK Heavy XXL", 149, "🌌", "Accessories", ["new"], "A desk-sized runway for your mouse. Stitched edges, zero drag, infinite vibes.", un("1547394765-185e1e68f34e")],
-      ["Samsung Odyssey G7 32\"", 2499, "📺", "PC Gaming", ["staff"], "1000R curve and 240Hz. You'll blame lag on yourself for once.", un("1527443224154-c4a3942d3acf")],
+      ["SteelSeries QcK Heavy XXL", 149, "🌌", "Accessories", ["new"], "A desk-sized runway for your mouse. Stitched edges, zero drag, infinite vibes.", null],
+      ["Alienware 27 Gaming Monitor", 2499, "📺", "PC Gaming", ["staff"], "240Hz of buttery frames. You'll blame lag on yourself for once.", un("1593640408182-31c70c8268f5")],
       ["Xbox Elite Series 2 Controller", 699, "🎮", "Xbox", ["trending"], "Swappable paddles, trigger stops, and grip rated for rage-quit resistance.", wm("thumb/6/67/Microsoft-Xbox-One-controller.jpg/960px-Microsoft-Xbox-One-controller.jpg")],
       ["Logitech G29 Driving Force", 1099, "🏎️", "Sim Racing", ["limited"], "Force feedback strong enough to make you apologize to the curb you clipped.", wm("thumb/e/ed/Logitech_G29_steering_wheel.jpg/960px-Logitech_G29_steering_wheel.jpg")],
       ["Meta Quest 3", 2199, "🥽", "VR", ["new", "hot"], "Mixed reality so good your living room will never feel big enough again.", wm("thumb/a/af/Meta_Quest_3_display_unit.jpg/960px-Meta_Quest_3_display_unit.jpg")],
@@ -117,7 +118,7 @@ DC.data = (() => {
       ["BASED Pomade", 92, "🎩", "Styling", [], "Slick, structured, vaguely mysterious. Comes with imaginary jazz.", based("h_fdks.png"), ["straight", "thick"]],
       ["BASED Curl Cream", 77, "☁️", "Curls", ["trending"], "Frizz surrenders. Curls clump, bounce, and behave like they signed a contract.", based("CurlCream-WebsiteCover.png"), ["curly", "coily", "dry", "frizzy"]],
       ["BASED Curl Mousse", 77, "🌀", "Curls", [], "Weightless definition with none of the crunch. Volume included.", based("CM-01-L.png"), ["curly", "wavy", "fine"]],
-      ["BASED Curl Gel", 77, "💠", "Curls", [], "Hold that lasts the whole day, plus the humidity has been formally dismissed.", based("CG-01.png"), ["curly", "coily", "thick"]],
+      ["BASED Curl Gel", 77, "💠", "Curls", [], "Hold that lasts the whole day. Humidity has been formally dismissed.", based("CG-01.png"), ["curly", "coily", "thick"]],
       ["BASED Curl Refresh Spray", 77, "🌸", "Curls", ["new"], "Day-two curls, resurrected in thirty seconds flat.", based("CRS-01-L.png"), ["curly", "coily", "frizzy"]],
       ["BASED Leave-In Conditioner", 77, "💧", "Treatment", ["staff"], "All-day hydration that makes split ends file for retirement.", based("LeaveIn-WebsiteCover.png"), ["dry", "damaged", "frizzy", "curly"]],
       ["BASED Shampoo", 107, "🫧", "Wash", ["bestseller"], "Clean, healthy hair & scalp — resets your head to factory settings.", based("1_Shampoo_-_Cover.png"), ["oily", "fine", "straight", "wavy"]],
@@ -130,24 +131,54 @@ DC.data = (() => {
       ["Nike Air Force 1 '07", 449, "👟", "Shoes", ["bestseller"], "White-on-white perfection. Keeping them clean is the real endgame.", wm("thumb/7/7e/Nike_air_Force_1_white_on_white.jpg/960px-Nike_air_Force_1_white_on_white.jpg")],
       ["Levi's Trucker Jacket", 349, "🧥", "Clothing", ["limited"], "The denim jacket every movie protagonist owns. Now it's your turn.", un("1551537482-f2075a1d41f2")],
       ["Levi's 501 Original", 299, "👖", "Clothing", [], "The blueprint. 150 years of fit checks can't be wrong.", un("1542272604-787c3835535d")],
-      ["Casio G-Shock GA-2100", 399, "⌚", "Accessories", ["staff"], "Survives drops, dives, and deadlines. The CasiOak your wrist deserves.", un("1523170335258-f5ed11844a49")],
+      ["Fossil Blue Steel Chronograph", 649, "⌚", "Accessories", ["staff"], "Steel bracelet, blue dial, and the quiet confidence of someone always on time.", un("1523170335258-f5ed11844a49")],
       ["Ray-Ban Original Wayfarer", 649, "🕶️", "Accessories", ["trending"], "Worn by icons since 1956. Makes every parking lot look like a movie scene.", un("1572635196237-14b3f281503f")],
       ["Gucci GG Marmont Crossbody", 8999, "👜", "Accessories", ["limited"], "Quilted leather, gold hardware, and the confidence of someone who doesn't check price tags.", un("1548036328-c9fa89d128fa")],
       ["New Era 59FIFTY Cap", 179, "🧢", "Accessories", ["new"], "Structured crown, flat brim, instant credibility.", un("1521369909029-2afed882baee")],
       ["Cuban Link Chain 18K", 449, "📿", "Accessories", [], "Gold-toned links with main-character shine. Fictionally hypoallergenic.", un("1599643478518-a784e5dc4c8f")],
       ["Birkenstock Arizona", 449, "🩴", "Shoes", ["hot"], "Cork soles that mold to your feet. Comfort so real it transcends the fiction.", un("1603487742131-4160ec999306")],
     ],
+    apple: [
+      ["iPhone 17 Pro Max", 5399, "📱", "iPhone", ["hot", "bestseller"], "The biggest, longest-lasting iPhone ever made. Your pocket will adjust.", ap("v/iphone-17-pro/g/images/meta/iphone-17-pro_overview__eumhhclcpuaa_og.png"), null,
+        { Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400], ["2TB", 3200]] }],
+      ["iPhone 17 Pro", 4699, "📱", "iPhone", ["trending"], "Pro cameras, pro chip, pro everything — minus the Max wingspan.", ap("v/iphone-17-pro/g/images/meta/iphone-17-pro_overview__eumhhclcpuaa_og.png"), null,
+        { Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400]] }],
+      ["iPhone 17", 3399, "📱", "iPhone", ["bestseller"], "All the essentials, none of the compromises. The people's iPhone.", ap("v/iphone-17/g/images/meta/iphone-17_overview__cg0rlzmbhl7m_og.png"), null,
+        { Storage: [["256GB", 0], ["512GB", 500]] }],
+      ["iPhone Air", 4199, "📱", "iPhone", ["new", "hot"], "Impossibly thin. You'll keep checking your pocket to make sure it's there.", ap("v/iphone-air/g/images/meta/iphone-air_overview__dwhg6l117yqa_og.png"), null,
+        { Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400]] }],
+      ["iPad Pro", 4199, "📲", "iPad", ["staff"], "M-series power in a slab of glass thinner than your excuses for buying it.", ap("v/ipad-pro/aw/images/meta/ipad-pro_overview__bu4cql27diaa_og.png"), null,
+        { Size: [["11-inch", 0], ["13-inch", 1300]], Storage: [["256GB", 0], ["512GB", 400], ["1TB", 1500], ["2TB", 3000]] }],
+      ["iPad Air", 2499, "📲", "iPad", ["trending"], "The sweet spot. Powerful enough for everything, light enough for anywhere.", ap("v/ipad-air/ah/images/meta/ipad-air_overview__bc2fd15uec0y_og.png"), null,
+        { Size: [["11-inch", 0], ["13-inch", 800]], Storage: [["128GB", 0], ["256GB", 400], ["512GB", 800], ["1TB", 1600]] }],
+      ["iPad mini", 2099, "📲", "iPad", [], "Full iPad brain, paperback body. The one-handed doomscroll champion.", ap("v/ipad-mini/v/images/meta/ipad-mini_overview__cxipvq7fs1ci_og.png"), null,
+        { Storage: [["128GB", 0], ["256GB", 400], ["512GB", 800]] }],
+      ["iPad 11-inch (A16)", 1449, "📲", "iPad", ["bestseller"], "The entry ticket to the ecosystem. Students and note-takers, assemble.", ap("v/ipad-11/d/images/meta/ipad-11_overview__brh97xhhd8b6_og.png"), null,
+        { Storage: [["128GB", 0], ["256GB", 350], ["512GB", 750]] }],
+      ["Apple Vision Pro", 14999, "🥽", "Vision", ["limited", "hot"], "Spatial computing strapped to your face. Reality, but with a settings menu.", ap("v/apple-vision-pro/k/images/meta/apple-vision-pro-us__f28gp8ey4vam_og.png"), null,
+        { Storage: [["256GB", 0], ["512GB", 800], ["1TB", 1600]] }],
+      ["MacBook Air", 4399, "💻", "Mac", ["bestseller"], "Fanless, silent, and faster than laptops twice its price. The default answer.", ap("v/macbook-air/z/images/meta/macbook_air_mx__ez5y0k5yy7au_og.png"), null,
+        { Size: [["13-inch", 0], ["15-inch", 800]], Storage: [["256GB", 0], ["512GB", 800], ["1TB", 1600]] }],
+      ["MacBook Pro", 6999, "💻", "Mac", ["staff"], "The one the pros actually use. Battery life measured in workdays, not hours.", ap("v/macbook-pro/ax/images/meta/macbook-pro__difvbgz1plsi_og.png"), null,
+        { Size: [["14-inch", 0], ["16-inch", 2000]], Storage: [["512GB", 0], ["1TB", 800], ["2TB", 2400]] }],
+      ["Apple Watch Series 11", 1699, "⌚", "Watch", ["trending"], "Closes your rings, reads your heart, and politely tells you to stand up.", ap("v/apple-watch-series-11/c/images/meta/apple-watch-series-11__cim89z1i9spe_og.png"), null,
+        { Size: [["42mm", 0], ["46mm", 130]] }],
+      ["Apple Watch Ultra 3", 3399, "⌚", "Watch", ["hot"], "Built for oceans and mountains. Worn mostly to meetings. No judgment.", ap("v/apple-watch-ultra-3/b/images/meta/apple-watch-ultra-3__y7lxayrwmlem_og.png")],
+      ["Apple Watch SE 3", 999, "⌚", "Watch", ["new"], "The essentials on your wrist without the flagship price tag.", ap("v/apple-watch-se-3/b/images/meta/apple-watch-se-3__d0wwc67lzg02_og.png"), null,
+        { Size: [["40mm", 0], ["44mm", 120]] }],
+      ["AirPods Pro 3", 999, "🎵", "Audio", ["bestseller"], "Noise cancellation strong enough to mute an entire open office.", ap("v/airpods-pro/s/images/meta/og__c0ceegchesom_overview.png")],
+      ["AirPods Max 2", 2299, "🎧", "Audio", [], "Over-ear luxury with a carrying case nobody understands. Sounds incredible though.", ap("v/airpods-max/k/images/meta/airpods-max_overview__c2mz40a3bugm_og.png")],
+      ["AirTag (4-Pack)", 449, "📍", "Accessories", [], "Attach to keys, wallet, remote, and your sense of direction.", ap("v/airtag/g/images/meta/og__ck3n0k1jl6j6.png")],
+      ["HomePod mini", 449, "🔮", "Accessories", [], "A grapefruit-sized speaker that runs your whole imaginary smart home.", ap("v/homepod-mini/j/images/meta/homepod-mini__bnxwvz5xrtpy_og.png")],
+      ["Apple Studio Display", 6499, "🖥️", "Mac", ["staff"], "5K glass so sharp you'll see pixels in your dreams. Speakers hiding a whole cinema.", ap("v/studio-display/f/images/meta/studio-display_overview__cc7vair07fjm_og.png")],
+    ],
     tech: [
-      ["iPhone 16 Pro", 4899, "📱", "Mobile", ["hot", "bestseller"], "Titanium, a camera bump you could rappel from, and a screen smoother than your excuses.", un("1510557880182-3d4d3cba35a5")],
       ["Samsung Galaxy Tab S9", 2999, "📲", "Mobile", [], "Laptop power, couch energy. The S Pen attaches magnetically and vanishes mysteriously.", un("1544244015-0df4b3ffc6b0")],
-      ["Apple Watch Ultra 2", 3399, "⏱️", "Mobile", ["trending"], "Tracks heart rate, sleep, and how often you check it to avoid conversation.", wm("4/4b/Apple_Watch_Ultra_Series_3_Natural_Titanium_Case.jpg")],
-      ["Anker Nano II 65W", 149, "⚡", "Power", ["new"], "Charges your laptop, phone, and buds at once. Smaller than a plum.", un("1588508065123-287b28e013da")],
+      ["Anker Nano II 65W", 149, "⚡", "Power", ["new"], "Charges your laptop, phone, and buds at once. Smaller than a plum.", null],
       ["Anker PowerCore 20K", 199, "🔋", "Power", ["bestseller"], "Twenty thousand milliamps between you and 1% panic.", un("1609091839311-d5365f9ff1c5")],
-      ["JBL Charge 5", 649, "🔊", "Audio", [], "Room-filling sound in every direction. Neighbors become fans, involuntarily.", un("1608043152269-423dbba4e7e1")],
-      ["Apple AirPods Pro 2", 949, "🎵", "Audio", ["trending"], "Noise cancellation strong enough to mute an entire open office.", wm("b/b9/AirPods_Pro_3_with_case.jpg")],
+      ["JBL Charge 5", 649, "🔊", "Audio", ["trending"], "Room-filling sound in every direction. Neighbors become fans, involuntarily.", un("1608043152269-423dbba4e7e1")],
       ["Sony α7 IV", 9999, "📷", "Cameras", ["staff"], "Full-frame magic. Your food pics are about to get a gallery show.", un("1516035069371-29a1b244cc32")],
-      ["Philips Hue Starter Kit", 799, "💡", "Smart Home", [], "Sixteen million colors, voice controlled. 'Movie mode' will change your life.", un("1565814329452-e1efa11c5b89")],
-      ["Apple AirTag (4-Pack)", 449, "📍", "Smart Home", [], "Attach to keys, wallet, remote, and your sense of direction.", un("1622434641406-a158123450f9")],
+      ["Philips Vintage LED Bulb", 89, "💡", "Smart Home", [], "Edison glow without the Edison electricity bill. Instant cozy.", un("1565814329452-e1efa11c5b89")],
       ["DJI Mini 4 Pro", 3299, "🛸", "Cameras", ["limited"], "4K aerial shots and a return-home button for when you panic. You will panic.", wm("thumb/2/2f/DJI_Mavic_Pro.jpg/960px-DJI_Mavic_Pro.jpg")],
     ],
     fitness: [
@@ -159,7 +190,7 @@ DC.data = (() => {
       ["Nike Pegasus 41", 599, "🏃", "Gear", ["hot"], "The workhorse of running shoes. PRs voluntary but statistically likely.", un("1542291026-7eec264c27ff")],
       ["Manduka PRO Yoga Mat", 499, "🧘", "Recovery", ["trending"], "Extra thick, zero slip. Ideal for yoga, stretching, and lying down dramatically.", un("1544367567-0f2fcb009e0b")],
       ["TriggerPoint GRID Roller", 179, "🪵", "Recovery", [], "Hurts so good. Your IT band will write you a thank-you note eventually.", un("1600881333168-2ef49b341f30")],
-      ["Fitbit Charge 6", 649, "📈", "Gear", ["new"], "Counts steps, reps, and streaks. Judges you silently but supportively.", un("1508685096489-7aacd43bd3b1")],
+      ["Fitbit Charge 6", 649, "📈", "Gear", ["new"], "Counts steps, reps, and streaks. Judges you silently but supportively.", null],
       ["Harbinger Lifting Kit", 99, "🧤", "Equipment", [], "Straps, wraps, and grip for days. Calluses sold separately.", un("1526506118085-60ce8714f8c5")],
     ],
     food: [
@@ -177,40 +208,28 @@ DC.data = (() => {
       ["Honey Butter Croissant", 12, "🥐", "Desserts", ["staff"], "Seventy-two layers of laminated joy. Flake radius: two meters.", un("1555507036-ab1f4038808a")],
     ],
     home: [
-      ["Govee LED Strip 5m", 129, "💫", "Lighting", ["bestseller"], "Music-sync mode turns your ceiling into the aurora borealis, localized entirely in your room.", un("1519608487953-e999c86e7455")],
+      ["Govee LED Strip 5m", 129, "💫", "Lighting", ["bestseller"], "Music-sync mode turns your room into the aurora borealis, localized entirely in your room.", un("1519608487953-e999c86e7455")],
       ["Xiaomi Mi Desk Lamp Pro", 149, "🪔", "Lighting", [], "Infinite dimming and an arc that looks like modern art.", un("1507473885765-e6ed057f782c")],
       ["Monstera Deliciosa Plant", 89, "🪴", "Decor", ["staff"], "Thrives on neglect and compliments. Big-leaf energy included.", un("1614594975525-e45190c55d0b")],
-      ["Fatboy Original Bean Bag", 699, "🛋️", "Decor", ["bestseller"], "Memory foam the size of a small moon. Getting out is a tomorrow problem.", un("1567016432779-094069958ea5")],
+      ["Lounge Accent Armchair", 899, "🛋️", "Decor", ["bestseller"], "The reading chair that becomes the everything chair within a week.", un("1567016432779-094069958ea5")],
       ["Neon Wall Art Sign", 299, "🖼️", "Decor", [], "LED glow that makes any wall the main character.", un("1563089145-599997674d42")],
       ["IKEA KALLAX Shelf Unit", 399, "🗄️", "Storage", [], "Eight cubes that turn chaos into 'aesthetic minimalism'.", un("1594620302200-9a762244a156")],
       ["Philips Airfryer XXL", 899, "🍳", "Kitchen", ["trending"], "Crispy everything, zero guilt, one appliance now responsible for 80% of your meals.", un("1556909114-f6e7ad7d3136")],
-      ["Chemex Pour-Over Set", 349, "🫖", "Kitchen", [], "Glass-hourglass coffee and the moral high ground over pod machines.", un("1544787219-7f47ccb76574")],
+      ["Chemex Pour-Over Set", 349, "🫖", "Kitchen", [], "Glass-hourglass coffee and the moral high ground over pod machines.", null],
       ["Vitruvi Stone Diffuser", 249, "🕯️", "Decor", [], "Ultrasonic mist plus 'Rainy Bookstore' oil. Your room, but cinematic.", un("1608571423902-eed4a5ad8108")],
       ["Braun Classic Alarm Clock", 199, "🕰️", "Decor", ["limited"], "Dieter Rams design. Waking up is still bad, but it looks incredible.", un("1563861826100-9cb868fdbe1c")],
     ],
     auto: [
       ["Meguiar's Complete Detail Kit", 249, "🧽", "Care", [], "Foam cannon, microfiber army, and a shine that resets your car to showroom.", un("1520340356584-f9917d1eea6f")],
       ["Baseus A2 Pro Car Vacuum", 179, "🌪️", "Gadgets", [], "Cordless cyclone that finds fries from road trips you don't remember taking.", null],
-      ["Little Trees Black Ice 3-Pack", 25, "🌲", "Interior", ["new"], "Smells like a forest that also went to design school.", un("1441974231531-c6227db76b6e")],
-      ["iOttie MagSafe Car Mount", 129, "🧲", "Gadgets", ["bestseller"], "Snaps on one-handed at a red light. Holds through potholes and questionable playlists.", un("1512428559087-560fa5ceab42")],
+      ["Little Trees Black Ice 3-Pack", 25, "🌲", "Interior", ["new"], "Smells like a forest that also went to design school.", null],
+      ["iOttie MagSafe Car Mount", 129, "🧲", "Gadgets", ["bestseller"], "Snaps on one-handed at a red light. Holds through potholes and questionable playlists.", null],
       ["70mai A800S Dash Cam", 449, "📹", "Gadgets", ["staff"], "4K front and rear witness. Night vision sharp enough to read regret.", un("1449965408869-eaa3f722e40d")],
-      ["WeatherTech FloorLiner Set", 599, "🛞", "Interior", [], "Laser-measured fit. Contains spills, mud, and juice box incidents.", un("1503376780353-7e6692767b70")],
-      ["Michelin Digital Tire Inflator", 199, "🎈", "Gadgets", [], "Auto-stops at target PSI. The low-pressure light fears you now.", un("1568605117036-5fe5e7bab0b7")],
+      ["WeatherTech FloorLiner Set", 599, "🛞", "Interior", [], "Laser-measured fit. Contains spills, mud, and juice box incidents.", null],
+      ["Michelin Digital Tire Inflator", 199, "🎈", "Gadgets", [], "Auto-stops at target PSI. The low-pressure light fears you now.", null],
       ["Govee Car Underglow Kit", 229, "🚗", "Interior", ["limited"], "App-controlled glow. Technically street-legal in the fictional universe.", un("1544636331-e26879cd4d9b")],
       ["Turtle Wax Ceramic Spray", 89, "✨", "Care", [], "Water beads so hard it looks like CGI. Lasts six imaginary months.", null],
       ["Amazon Basics Trunk Organizer", 99, "🕸️", "Interior", [], "Groceries stay upright. The rogue orange era is over.", null],
-    ],
-    beauty: [
-      ["CeraVe Foaming Cleanser", 89, "🧼", "Skincare", ["bestseller"], "Removes sunscreen, city, and the general concept of Monday.", un("1556228578-8c89e6adf883")],
-      ["The Ordinary Niacinamide 10%", 65, "💎", "Skincare", ["trending"], "The serum with a cult following and a chemistry-exam name.", un("1620916566398-39f1143ab7be")],
-      ["La Roche-Posay Anthelios SPF50+", 119, "☀️", "Skincare", ["staff"], "No white cast, no grease, no excuse. Future you says thanks.", un("1526947425960-945c6e72858f")],
-      ["Cetaphil Moisturising Cream", 79, "🌥️", "Skincare", [], "Whipped, weightless, and gone in three seconds. Dry patches never happened.", un("1556228720-195a672e8a03")],
-      ["Burt's Bees Lip Balm Trio", 45, "🍯", "Care", ["new"], "Beeswax, honey, and pomegranate. You will lose two. That's why it's a trio.", un("1586495777744-4413f21062fa")],
-      ["Chanel N°5 EDP 100ml", 699, "🌑", "Fragrance", ["limited"], "A century of icon status in one bottle. Compliments fictionally guaranteed.", un("1541643600914-78b084683601")],
-      ["Rituals Samurai Body Wash", 69, "🛁", "Care", [], "A ten-minute shower becomes a forty-minute lore-building session.", un("1583947581924-860bda6a26df")],
-      ["Crest 3D Whitestrips", 189, "🦷", "Care", [], "Your smile, remastered in HD.", un("1606811841689-23dfddce3e95")],
-      ["Rose Quartz Face Roller", 79, "🌹", "Skincare", ["trending"], "Cold stone, warm reviews. De-puffs mornings and existential dread.", un("1596462502278-27bfdc403348")],
-      ["Evian Facial Spray", 55, "🌫️", "Skincare", [], "A three-second reset button for your face. Drama free.", un("1600428877878-1a0fd85beda8")],
     ],
     office: [
       ["Moleskine Classic Notebook", 119, "📓", "Paper", [], "The notebook of Hemingway and Picasso. Your grocery lists are in good company.", un("1531346878377-a5be20888e57")],
@@ -232,7 +251,7 @@ DC.data = (() => {
 
   CATEGORIES.forEach((cat) => {
     (DEFS[cat.id] || []).forEach((d, i) => {
-      const [name, price, emoji, sub, badges, blurb, img, hairTypes] = d;
+      const [name, price, emoji, sub, badges, blurb, img, hairTypes, options] = d;
       const id = `${cat.id}-${i + 1}`;
       const h = hash(id + name);
       const p = {
@@ -242,6 +261,7 @@ DC.data = (() => {
         desc: `${blurb} ${cat.boiler}`,
         img: img || null,
         hairTypes: hairTypes || null,
+        options: options || null,
         grad: cat.pal[i % cat.pal.length],
         rating: (40 + (h % 11)) / 10,                    // 4.0 – 5.0
         reviews: 60 + ((h >>> 3) % 7900),                // 60 – 7960
@@ -272,6 +292,28 @@ DC.data = (() => {
     });
   };
 
+  /* ── Cart keys + configurable options ───────────────────── */
+  // A cart key is "productId" or "productId~256GB~13-inch" when the
+  // product has selectable options.
+  const splitKey = (key) => {
+    const parts = String(key).split("~");
+    return { id: parts[0], opts: parts.slice(1) };
+  };
+
+  const optionExtra = (p, opts) => {
+    if (!p?.options || !opts || !opts.length) return 0;
+    let extra = 0;
+    Object.values(p.options).forEach((group) =>
+      group.forEach(([label, delta]) => {
+        if (delta && opts.includes(label)) extra += delta;
+      }));
+    return extra;
+  };
+
+  // Key with every option group at its base choice.
+  const defaultKey = (p) =>
+    p.options ? [p.id, ...Object.values(p.options).map((g) => g[0][0])].join("~") : p.id;
+
   /* ── Flash sale (rotates daily, deterministic) ──────────── */
   const flashSale = () => {
     const seed = daySeed();
@@ -282,6 +324,26 @@ DC.data = (() => {
       discount: 20 + Math.round(rand() * 6) * 5,         // 20–50 %
     }));
   };
+
+  // Day-cached flash lookup + effective pricing (used app-wide).
+  let flashCache = null, flashDay = 0;
+  const flashMap = () => {
+    if (flashDay !== daySeed()) {
+      flashDay = daySeed();
+      flashCache = {};
+      flashSale().forEach((p) => { flashCache[p.id] = p.discount; });
+    }
+    return flashCache;
+  };
+
+  const priceOf = (p) => {
+    const off = flashMap()[p.id];
+    if (!off) return { price: p.price, was: null, off: 0 };
+    return { price: p.price * (1 - off / 100), was: p.price, off };
+  };
+
+  // Final unit price: flash-adjusted base + option deltas.
+  const unitPrice = (p, opts) => priceOf(p).price + optionExtra(p, opts);
 
   const dailyPicks = () => pickSeeded(PRODUCTS, 8, daySeed() * 13 + 5);
 
@@ -353,6 +415,8 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.4.1", notes: ["Fixed monitor photo mismatch — now Alienware 27 (matching its picture)", "Added Apple Studio Display with its official image"] },
+    { v: "1.4.0", notes: ["New Apple category — iPhone 17 lineup, iPads, Macs, Watch, Vision Pro & more with official images from apple.com", "Choose storage and size options on Apple products", "Buy spins any time (stack as many as you like) + skip the spin animation", "Fixed product photos to match what products actually are", "Removed the Beauty category"] },
     { v: "1.3.0", notes: ["Fixed stale caching — updates now load automatically", "Network-first: fresh files whenever online, cache only as offline fallback", "App auto-reloads once when a new version arrives (with a toast)"] },
     { v: "1.2.1", notes: ["New app icon: cart + lightning bolt (replaces the plain \"D\")"] },
     { v: "1.2.0", notes: ["Sound effects: spin ratchet, checkout fanfare, reward chimes & shimmers", "Each reward type has its own distinct sound", "Sound toggle in Settings"] },
@@ -365,5 +429,6 @@ DC.data = (() => {
   return {
     VERSION, CATEGORIES, PRODUCTS, COUPONS, DRIVERS, BADGES, CHANGELOG, HAIR_TYPES,
     byId, byCat, category, search, flashSale, dailyPicks, reviewsFor,
+    splitKey, optionExtra, defaultKey, priceOf, unitPrice,
   };
 })();

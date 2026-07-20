@@ -171,15 +171,17 @@ DC.app = (() => {
   };
 
   /* ── Add-to-cart helpers ────────────────────────────────── */
-  const quickAdd = (id, fromEl, qty = 1) => {
+  // Accepts a full cart key ("id" or "id~256GB~13-inch").
+  const quickAdd = (key, fromEl, qty = 1) => {
+    const { id, opts } = D.splitKey(key);
     const p = D.byId(id);
     if (!p) return;
-    S.addToCart(id, qty);
+    S.addToCart(key, qty);
     U.haptic(12);
     DC.sound.play("pop");
     UI.flyToCart(fromEl, p.emoji);
     S.addXP(3);
-    U.toast("Added to cart", p.name, "🛒", 1800);
+    U.toast("Added to cart", p.name + (opts.length ? ` · ${opts.join(" · ")}` : ""), "🛒", 1800);
   };
 
   /* ── Global click delegation ────────────────────────────── */
@@ -201,14 +203,19 @@ DC.app = (() => {
         U.toast("Favorited!", DC.data.byId(el.dataset.id).name, "❤️", 1500);
       }
     },
-    "quick-add": (el, e) => { e.stopPropagation(); quickAdd(el.dataset.id, el); },
-    "add-cart": (el) => quickAdd(el.dataset.id, el, DC.views.product.getQty()),
-    "buy-now": (el) => {
-      S.addToCart(el.dataset.id, DC.views.product.getQty());
+    "quick-add": (el, e) => {
+      e.stopPropagation();
+      // Card adds use the base configuration for products with options.
+      quickAdd(D.defaultKey(D.byId(el.dataset.id)), el);
+    },
+    "add-cart": (el) => quickAdd(DC.views.product.getKey(), el, DC.views.product.getQty()),
+    "buy-now": () => {
+      S.addToCart(DC.views.product.getKey(), DC.views.product.getQty());
       U.haptic(12);
       go("cart");
     },
     "pd-qty": (el) => DC.views.product.changeQty(Number(el.dataset.id)),
+    "pd-opt": (el) => DC.views.product.setOpt(Number(el.dataset.g), el.dataset.id, el),
     "pd-thumb": (el) => DC.views.product.setHero(el.dataset.id, el),
 
     "cart-qty": (el, e) => { e.stopPropagation(); DC.views.cart.changeQty(el.dataset.id, Number(el.dataset.d)); },
@@ -220,6 +227,7 @@ DC.app = (() => {
 
     "claim-daily": () => claimDaily(),
     spin: () => DC.views.rewards.spin(),
+    "skip-spin": () => DC.views.rewards.skipSpin(),
     "buy-spin": () => DC.views.rewards.buySpin(),
     "open-box": () => DC.views.rewards.openBox(),
     "ach-info": (el) => DC.views.rewards.achInfo(el.dataset.id),

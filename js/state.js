@@ -207,30 +207,38 @@ DC.store = (() => {
   };
 
   /* ── Cart ───────────────────────────────────────────────── */
+  // Cart is keyed by "productId" or "productId~opt1~opt2" so the same
+  // product with different storage/size lives on separate lines.
   const cartCount = () => Object.values(s.cart).reduce((a, b) => a + b, 0);
 
-  const addToCart = (id, qty = 1) => {
-    s.cart[id] = (s.cart[id] || 0) + qty;
-    bump(DC.data.byId(id).cat, 4);
+  const addToCart = (key, qty = 1) => {
+    const p = DC.data.byId(DC.data.splitKey(key).id);
+    if (!p) return;
+    s.cart[key] = (s.cart[key] || 0) + qty;
+    bump(p.cat, 4);
     save();
     DC.app?.refreshBadges?.();
   };
 
-  const setQty = (id, qty) => {
-    if (qty <= 0) delete s.cart[id];
-    else s.cart[id] = qty;
+  const setQty = (key, qty) => {
+    if (qty <= 0) delete s.cart[key];
+    else s.cart[key] = qty;
     save();
     DC.app?.refreshBadges?.();
   };
 
   const cartItems = () =>
     Object.entries(s.cart)
-      .map(([id, qty]) => ({ p: DC.data.byId(id), qty }))
-      .filter((it) => it.p);
+      .map(([key, qty]) => {
+        const { id, opts } = DC.data.splitKey(key);
+        const p = DC.data.byId(id);
+        return p ? { key, p, opts, qty, unit: DC.data.unitPrice(p, opts) } : null;
+      })
+      .filter(Boolean);
 
   const cartTotals = (couponCode) => {
     const items = cartItems();
-    const subtotal = items.reduce((a, it) => a + it.p.price * it.qty, 0);
+    const subtotal = items.reduce((a, it) => a + it.unit * it.qty, 0);
     const coupon = couponCode ? DC.data.COUPONS[couponCode] : null;
     const discount = coupon?.pct ? (subtotal * coupon.pct) / 100 : 0;
     let delivery = subtotal === 0 || subtotal >= 200 ? 0 : 15;
@@ -270,7 +278,7 @@ DC.store = (() => {
     const order = {
       id: U.uid(),
       num: "DC-" + String(10000 + (h % 90000)),
-      items: items.map((it) => ({ id: it.p.id, qty: it.qty, price: it.p.price })),
+      items: items.map((it) => ({ key: it.key, qty: it.qty, price: it.unit })),
       totals: { ...totals },
       createdAt: Date.now(),
       duration: (120 + Math.random() * 150) * 1000,      // 2–4.5 real minutes
