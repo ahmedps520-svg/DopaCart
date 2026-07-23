@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.8.0";
+  const VERSION = "1.8.1";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -415,21 +415,24 @@ DC.data = (() => {
   };
 
   /* ── Coupons ────────────────────────────────────────────── */
+  // Codes refreshed in v1.8.1 (the old ones got too memorized).
   const COUPONS = {
-    SAVE10: { pct: 10, label: "10% off" },
-    DOPA20: { pct: 20, label: "20% off" },
-    LUCKY25: { pct: 25, label: "25% off" },
-    VIP30: { pct: 30, label: "30% off" },
-    COMEBACK15: { pct: 15, label: "15% off — welcome back" },
-    FREESHIP: { pct: 0, freeShip: true, label: "Free delivery" },
+    // Typeable codes — some are hinted in the app.
+    FRESH10: { pct: 10, label: "10% off" },
+    DRIP18: { pct: 18, label: "18% off" },
+    SPLURGE20: { pct: 20, label: "20% off" },
+    GIMME25: { pct: 25, label: "25% off" },
+    MISSU15: { pct: 15, label: "15% off — welcome back" },
+    FREERIDE: { pct: 0, freeShip: true, label: "Free delivery" },
     // Tier-exclusive codes — the spin wheel hands these out (state.TIERS).
-    ELITE35: { pct: 35, label: "35% off — Silver spin prize" },
-    ROYAL40: { pct: 40, label: "40% off — Gold spin prize" },
-    MYTHIC45: { pct: 45, label: "45% off — Platinum spin prize" },
-    LEGEND50: { pct: 50, label: "50% off — Diamond spin prize" },
-    OBSIDIAN55: { pct: 55, label: "55% off — Obsidian spin prize" },
-    COSMIC60: { pct: 60, label: "60% off — Cosmic spin prize" },
-    SINGULARITY66: { pct: 66, label: "66% off — Singularity spin prize" },
+    SPARK30: { pct: 30, label: "30% off — Bronze spin prize" },
+    SURGE35: { pct: 35, label: "35% off — Silver spin prize" },
+    BLAZE40: { pct: 40, label: "40% off — Gold spin prize" },
+    NOVA45: { pct: 45, label: "45% off — Platinum spin prize" },
+    PRISM50: { pct: 50, label: "50% off — Diamond spin prize" },
+    ECLIPSE55: { pct: 55, label: "55% off — Obsidian spin prize" },
+    QUASAR60: { pct: 60, label: "60% off — Cosmic spin prize" },
+    RIFT66: { pct: 66, label: "66% off — Singularity spin prize" },
   };
 
   /* ── Drivers (for fake deliveries) ──────────────────────── */
@@ -491,6 +494,7 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.8.1", notes: ["Every badge now tells you exactly how to unlock it (no more 'keep playing')", "All coupon codes refreshed — new typeable ones: SPLURGE20, GIMME25, DRIP18, FRESH10, FREERIDE (free delivery), MISSU15 (welcome-back). Spin/tier prizes renamed too", "Rebalanced the Lucky Spin: it no longer prints spins or coins faster than you spend them, so the infinite money loop is closed — the wheel dropped its 'win spins' slot, coins are flat (never tier-scaled) and always below the buy price, and spins now cost 150 🪙", "Cash & XP still scale with your VIP tier (up to ×3) — that part stays generous"] },
     { v: "1.8.0", notes: ["3 new categories — 🐾 Pets, 🧸 Toys & Games, 🏕️ Outdoors — 18 new products, all in the Collection", "Levels no longer stop at The Final Boss of Shopping — 10 new titles up to The Shopping Singularity, then prestige stars (★) forever", "3 new VIP tiers above Diamond: ⬛ Obsidian, 🌌 Cosmic, 🕳️ Singularity (up to 30% cashback, ×3 spin payouts, 66% spin coupon)", "8 new badges including Whale, Tycoon, Hoarder and Gotta Buy 'Em All", "Bigger orders now take the courier longer to deliver — a full cart can take up to 15 minutes"] },
     { v: "1.7.4", notes: ["Faster spins — the wheel now settles in 2.6s instead of 4.2s", "⚡ Spin all — burn every spin at once and get one combined haul summary (bonus spins you win stay for the next round)", "Buy max — top up as many spins as your coins allow in a single tap", "App now stays in portrait; turned sideways on a phone, it politely asks you to rotate back"] },
     { v: "1.7.3", notes: ["DopaBot's bubble is now draggable — grab him, drop him anywhere, and he spring-snaps to the nearest edge with a satisfying pop", "He remembers where you put him (even after closing the app) and stops auto-wandering once you've placed him", "Grows under your finger while dragging, stays clear of the tab bar, and survives screen rotation"] },

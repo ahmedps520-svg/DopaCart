@@ -13,25 +13,38 @@ DC.views.rewards = (() => {
   // Base values only — cash/coin/XP payouts scale with the VIP tier's
   // spinMult (×1 Bronze → ×2 Diamond), and the coupon segment hands
   // out the tier's exclusive code (up to 50% off at Diamond).
+  // No "win spins" segment any more — the wheel used to print spins,
+  // and coin payouts above the buy cost let you loop coins → spins →
+  // coins forever. Coins are now flat (never tier-scaled) and always
+  // below SPIN_COST, so buying spins is a gamble, not a money printer.
   const SEGMENTS = [
-    { emoji: "💵", color: "#c0392b", weight: 17, kind: "cash", base: 800 },
-    { emoji: "🪙", color: "#8e44ad", weight: 15, kind: "coins", base: 75 },
-    { emoji: "⭐", color: "#2980b9", weight: 13, kind: "xp", base: 250 },
+    { emoji: "💵", color: "#c0392b", weight: 20, kind: "cash", base: 700 },
+    { emoji: "🪙", color: "#8e44ad", weight: 16, kind: "coins", base: 40 },
+    { emoji: "⭐", color: "#2980b9", weight: 15, kind: "xp", base: 250 },
     { emoji: "🏷️", color: "#16a085", weight: 10, kind: "coupon" },
-    { emoji: "💰", color: "#f39c12", weight: 4, kind: "cash", base: 5000, jackpot: true },
-    { emoji: "🎡", color: "#d35400", weight: 9, kind: "spins", base: 2 },
-    { emoji: "🪙", color: "#27ae60", weight: 12, kind: "coins", base: 150 },
+    { emoji: "💰", color: "#f39c12", weight: 4, kind: "cash", base: 4000, jackpot: true },
+    { emoji: "🪙", color: "#27ae60", weight: 13, kind: "coins", base: 90 },
     { emoji: "📦", color: "#7f8c8d", weight: 8, kind: "box" },
+    { emoji: "✨", color: "#d35400", weight: 14, kind: "xp", base: 120 },
   ];
+  const SPIN_COST = 150;               // coins per bought spin (was 100)
 
   // Tier bonus note appended to reward messages ("×1.5 Gold bonus").
   const multNote = (tier) =>
     tier.spinMult > 1 ? ` — ×${tier.spinMult} ${tier.name} bonus applied` : "";
 
+  // Numeric value of a segment at the current tier — coins are flat
+  // (never scaled), cash & XP scale with the VIP spin multiplier.
+  const segValue = (seg) => {
+    if (!seg.base) return 0;
+    if (seg.kind === "coins") return seg.base;
+    return Math.round(seg.base * S.tierInfo().tier.spinMult);
+  };
+
   /* Resolve a segment into { label, msg, apply } at the current tier. */
   const segReward = (seg) => {
     const tier = S.tierInfo().tier;
-    const v = seg.base ? Math.round(seg.base * tier.spinMult) : 0;
+    const v = segValue(seg);
     switch (seg.kind) {
       case "cash": return {
         label: "SAR " + v.toLocaleString(),
@@ -40,18 +53,13 @@ DC.views.rewards = (() => {
       };
       case "coins": return {
         label: `${v}🪙`,
-        msg: `+${v} coins${multNote(tier)}`,
+        msg: `+${v} coins`,
         apply: () => S.earnCoins(v),
       };
       case "xp": return {
         label: `${v} XP`,
         msg: `+${v} XP${multNote(tier)}`,
         apply: () => S.addXP(v),
-      };
-      case "spins": return {
-        label: `+${seg.base}🎡`,
-        msg: `+${seg.base} extra spins`,
-        apply: () => { S.s.spins += seg.base; S.save(); },
       };
       case "coupon": return {
         label: D.COUPONS[tier.coupon].pct + "% off",
@@ -198,13 +206,13 @@ DC.views.rewards = (() => {
       <button class="btn btn-glass btn-block" id="spin-all-btn" data-action="spin-all">⚡ Spin all ${S.s.spins} at once</button>` : ""}
       <div style="height:8px"></div>
       <button class="btn btn-ghost btn-block" id="skip-spin-btn" data-action="skip-spin" hidden>Skip animation ⏭️</button>
-      <button class="btn btn-glass btn-block" id="buy-spin-btn" data-action="buy-spin">Buy a spin · 100 🪙</button>
-      ${S.s.coins >= 200 ? `<div style="height:8px"></div>
-      <button class="btn btn-glass btn-block" id="buy-all-btn" data-action="buy-all-spins">Buy max · ${Math.floor(S.s.coins / 100)} spins (${(Math.floor(S.s.coins / 100) * 100).toLocaleString()} 🪙)</button>` : ""}
-      <p class="tiny muted" style="margin-top:10px">Free spin every day, plus one per level-up. Stack as many as you like.<br>
+      <button class="btn btn-glass btn-block" id="buy-spin-btn" data-action="buy-spin">Buy a spin · ${SPIN_COST} 🪙</button>
+      ${S.s.coins >= SPIN_COST * 2 ? `<div style="height:8px"></div>
+      <button class="btn btn-glass btn-block" id="buy-all-btn" data-action="buy-all-spins">Buy max · ${Math.floor(S.s.coins / SPIN_COST)} spins (${(Math.floor(S.s.coins / SPIN_COST) * SPIN_COST).toLocaleString()} 🪙)</button>` : ""}
+      <p class="tiny muted" style="margin-top:10px">Free spin every day, plus one per level-up. Spins cost ${SPIN_COST} 🪙 to buy.<br>
         ${(() => { const t = S.tierInfo().tier; return t.spinMult > 1
-          ? `${t.emoji} ${t.name} perk: payouts ×${t.spinMult}, coupon prize ${D.COUPONS[t.coupon].pct}% off.`
-          : `Higher VIP tiers multiply payouts (up to ×2) and upgrade the coupon prize to 50% off.`; })()}</p>
+          ? `${t.emoji} ${t.name} perk: cash & XP ×${t.spinMult}, coupon prize ${D.COUPONS[t.coupon].pct}% off.`
+          : `Higher VIP tiers multiply cash & XP (up to ×3) and upgrade the coupon prize to 66% off.`; })()}</p>
     </div>
 
     ${UI.section("📦 Mystery Box")}
@@ -294,7 +302,7 @@ DC.views.rewards = (() => {
     DC.sound.spinTicks(1150);
 
     const tier = S.tierInfo().tier;
-    const tally = { cash: 0, coins: 0, xp: 0, spins: 0, coupon: 0, box: 0 };
+    const tally = { cash: 0, coins: 0, xp: 0, coupon: 0, box: 0 };
     // Suppress per-level popups during the batch — the summary is the
     // single reward dialog (level-up bonuses still apply + notify).
     DC.app.setLevelUpQuiet(true);
@@ -303,11 +311,10 @@ DC.views.rewards = (() => {
         if (!S.useSpin()) break;
         const seg = SEGMENTS[pickIdx()];
         segReward(seg).apply();
-        const v = seg.base ? Math.round(seg.base * tier.spinMult) : 0;
+        const v = segValue(seg);
         if (seg.kind === "cash") tally.cash += v;
         else if (seg.kind === "coins") tally.coins += v;
         else if (seg.kind === "xp") tally.xp += v;
-        else if (seg.kind === "spins") tally.spins += seg.base;
         else if (seg.kind === "coupon") tally.coupon += 1;
         else if (seg.kind === "box") tally.box += 1;
       }
@@ -335,15 +342,13 @@ DC.views.rewards = (() => {
       if (tally.cash) rows.push(row("💵 DopaCash", `+SAR ${tally.cash.toLocaleString()}`));
       if (tally.coins) rows.push(row("🪙 Coins", `+${tally.coins.toLocaleString()}`));
       if (tally.xp) rows.push(row("⭐ XP", `+${tally.xp.toLocaleString()}`));
-      if (tally.spins) rows.push(row("🎡 Bonus spins", `+${tally.spins}`));
       if (tally.coupon) rows.push(row(`🏷️ Coupon ${tier.coupon}`, `×${tally.coupon}`));
       if (tally.box) rows.push(row("📦 Mystery Box", "ready!"));
       UI.modal(`
         <div class="reward-burst">🎡</div>
         <h3 style="margin:6px 0 2px">${n} spin${n === 1 ? "" : "s"} done!</h3>
-        <p class="tiny muted" style="margin-bottom:12px">Your whole haul${tier.spinMult > 1 ? ` · ×${tier.spinMult} ${tier.name} bonus baked in` : ""}:</p>
+        <p class="tiny muted" style="margin-bottom:12px">Your whole haul${tier.spinMult > 1 ? ` · ×${tier.spinMult} ${tier.name} bonus on cash & XP` : ""}:</p>
         <div style="display:flex;flex-direction:column;gap:9px;text-align:left;margin-bottom:4px">${rows.join("")}</div>
-        ${tally.spins ? `<p class="tiny muted" style="margin-top:12px">You won ${tally.spins} more spin${tally.spins === 1 ? "" : "s"} — go again? 🎡</p>` : ""}
         <div style="height:14px"></div>
         <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Collect it all 🤑</button>
       `, "dialog", true, () => DC.app.render());
@@ -364,7 +369,7 @@ DC.views.rewards = (() => {
   };
 
   const buySpin = () => {
-    if (!S.spendCoins(100)) { U.toast("Not enough coins", "Earn more from orders and boxes", "🪙"); return; }
+    if (!S.spendCoins(SPIN_COST)) { U.toast("Not enough coins", `Spins cost ${SPIN_COST} 🪙 — earn more from orders and boxes`, "🪙"); return; }
     S.s.spins += 1; S.save();
     U.haptic(12);
     if (spinning) {
@@ -378,11 +383,11 @@ DC.views.rewards = (() => {
     }
   };
 
-  // Buy as many spins as coins allow, in one tap (100 🪙 each).
+  // Buy as many spins as coins allow, in one tap (SPIN_COST 🪙 each).
   const buyAllSpins = () => {
-    const n = Math.floor(S.s.coins / 100);
-    if (n <= 0) { U.toast("Not enough coins", "You need at least 100 🪙 for a spin", "🪙"); return; }
-    S.spendCoins(n * 100);
+    const n = Math.floor(S.s.coins / SPIN_COST);
+    if (n <= 0) { U.toast("Not enough coins", `You need at least ${SPIN_COST} 🪙 for a spin`, "🪙"); return; }
+    S.spendCoins(n * SPIN_COST);
     S.s.spins += n; S.save();
     U.haptic([12, 20, 12]);
     DC.sound.play("zip");
@@ -436,6 +441,14 @@ DC.views.rewards = (() => {
     "spin-master": "Spin the wheel 5 times.",
     unboxer: "Open 3 mystery boxes.",
     completionist: "Order from 5 different categories.",
+    "level-15": "Reach level 15.",
+    "level-25": "Reach level 25.",
+    whale: "Spend SAR 150,000 total DopaCash.",
+    tycoon: "Spend SAR 600,000 total DopaCash.",
+    "spin-tycoon": "Spin the wheel 50 times.",
+    hoarder: "Own 60 different products.",
+    "all-categories": "Order from every category at least once.",
+    "gotta-buy-em-all": "Own every product in the catalog.",
   };
 
   const achInfo = (id) => {

@@ -439,7 +439,7 @@ DC.app = (() => {
       if (sessionFlags.cartNudged || S.cartCount() === 0) return;
       sessionFlags.cartNudged = true;
       const it = S.cartItems()[0];
-      if (it) S.pushNotif("👀", "Your cart misses you", `${it.p.emoji} ${it.p.name} is still waiting — code COMEBACK15 takes 15% off.`);
+      if (it) S.pushNotif("👀", "Your cart misses you", `${it.p.emoji} ${it.p.name} is still waiting — code MISSU15 takes 15% off.`);
     }, 8 * 60000);
   };
 
@@ -625,7 +625,7 @@ DC.app = (() => {
     }
     // Returning with a full cart → welcome-back coupon nudge.
     if (away > 0 && S.cartCount() > 0) {
-      setTimeout(() => U.toast("Still in your cart 👀", "Code COMEBACK15 takes 15% off", "🛒", 4000), 3400);
+      setTimeout(() => U.toast("Still in your cart 👀", "Code MISSU15 takes 15% off", "🛒", 4000), 3400);
     }
     // DopaFriday — one in-app ping per event day.
     const ev = D.eventInfo();

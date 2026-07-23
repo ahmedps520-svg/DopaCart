@@ -83,7 +83,7 @@ DC.views.cart = (() => {
         ${coupon ? "Remove" : "Apply"}
       </button>
     </div>
-    ${!coupon ? `<div class="tiny muted" style="margin:-4px 0 10px 4px">Psst — try <b>DOPA20</b> or <b>FREESHIP</b></div>` : ""}
+    ${!coupon ? `<div class="tiny muted" style="margin:-4px 0 10px 4px">Psst — try <b>SPLURGE20</b>, <b>GIMME25</b> or <b>FREERIDE</b></div>` : ""}
 
     <div class="totals glass" id="cart-totals">${totalsHtml()}</div>
 

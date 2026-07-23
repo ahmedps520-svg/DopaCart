@@ -487,14 +487,14 @@ DC.store = (() => {
   // spinMult scales the wheel's cash/coin/XP payouts; coupon is the
   // code the wheel's coupon segment hands out at that tier.
   const TIERS = [
-    { id: "bronze", name: "Bronze", emoji: "🥉", at: 0, cashback: 10, spinMult: 1, coupon: "VIP30" },
-    { id: "silver", name: "Silver", emoji: "🥈", at: 25000, cashback: 12, spinMult: 1.25, coupon: "ELITE35" },
-    { id: "gold", name: "Gold", emoji: "🥇", at: 75000, cashback: 14, spinMult: 1.5, coupon: "ROYAL40" },
-    { id: "platinum", name: "Platinum", emoji: "💠", at: 150000, cashback: 16, spinMult: 1.75, coupon: "MYTHIC45" },
-    { id: "diamond", name: "Diamond", emoji: "💎", at: 300000, cashback: 20, spinMult: 2, coupon: "LEGEND50" },
-    { id: "obsidian", name: "Obsidian", emoji: "⬛", at: 600000, cashback: 23, spinMult: 2.25, coupon: "OBSIDIAN55" },
-    { id: "cosmic", name: "Cosmic", emoji: "🌌", at: 1200000, cashback: 26, spinMult: 2.5, coupon: "COSMIC60" },
-    { id: "singularity", name: "Singularity", emoji: "🕳️", at: 2500000, cashback: 30, spinMult: 3, coupon: "SINGULARITY66" },
+    { id: "bronze", name: "Bronze", emoji: "🥉", at: 0, cashback: 10, spinMult: 1, coupon: "SPARK30" },
+    { id: "silver", name: "Silver", emoji: "🥈", at: 25000, cashback: 12, spinMult: 1.25, coupon: "SURGE35" },
+    { id: "gold", name: "Gold", emoji: "🥇", at: 75000, cashback: 14, spinMult: 1.5, coupon: "BLAZE40" },
+    { id: "platinum", name: "Platinum", emoji: "💠", at: 150000, cashback: 16, spinMult: 1.75, coupon: "NOVA45" },
+    { id: "diamond", name: "Diamond", emoji: "💎", at: 300000, cashback: 20, spinMult: 2, coupon: "PRISM50" },
+    { id: "obsidian", name: "Obsidian", emoji: "⬛", at: 600000, cashback: 23, spinMult: 2.25, coupon: "ECLIPSE55" },
+    { id: "cosmic", name: "Cosmic", emoji: "🌌", at: 1200000, cashback: 26, spinMult: 2.5, coupon: "QUASAR60" },
+    { id: "singularity", name: "Singularity", emoji: "🕳️", at: 2500000, cashback: 30, spinMult: 3, coupon: "RIFT66" },
   ];
 
   const tierInfo = (spent = s.stats.spent) => {
