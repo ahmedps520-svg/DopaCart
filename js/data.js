@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.6.3";
+  const VERSION = "1.7.0";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -443,6 +443,7 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.7.0", notes: ["DopaBot is now a real conversation — type anything: \"gaming under 500\", \"curly hair routine\", \"where's my order\", \"surprise me\"…", "Uses Chrome's built-in on-device AI (Gemini Nano) when your browser has it; otherwise the new DopaBrain™ intent engine — either way, everything stays on your device", "Product picks always come from the real catalog, never made up", "DopaBot now floats around the app as an animated bubble — drifts, bobs, emotes, and occasionally whispers about deals. Tap him to chat"] },
     { v: "1.6.3", notes: ["Spin payouts now scale with your VIP tier — ×1.25 Silver up to ×2 Diamond on cash, coins and XP (jackpot hits SAR 10,000 at Diamond)", "Tier-exclusive spin coupons: 30% Bronze → 35% Silver → 40% Gold → 45% Platinum → 50% Diamond", "Fixed daily streak: a broken streak now resets to 0 right away (with a heads-up) instead of showing a stale count that silently collapsed on your next claim"] },
     { v: "1.6.2", notes: ["Service worker now revalidates with the server on every fetch — the browser's HTTP cache can never serve stale app files again (fixes stuck old versions on hosts like GitHub Pages)", "New in Settings: Check for Updates — fetches the latest version on demand"] },
     { v: "1.6.1", notes: ["Lucky Spin pays way better: SAR 800 base cash, SAR 5,000 jackpot, up to 150 coins, 250 XP, +2 spins, a 30% coupon — and a new segment that instantly recharges your Mystery Box", "Fixed: skipping a spin and tapping outside the reward dialog left the button stuck on \"Spinning…\"", "Reward dialogs now refresh the screen however you close them"] },

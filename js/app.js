@@ -74,6 +74,9 @@ DC.app = (() => {
     // Tab highlight
     document.querySelectorAll(".tab").forEach((t) =>
       t.classList.toggle("active", t.dataset.route === route.tab));
+
+    // The floating bot hides while you're already talking to him.
+    document.getElementById("dopabot-fab")?.classList.toggle("gone", current.name === "shopper");
   };
 
   /* Re-render without touching scroll position (live lists). */
@@ -245,7 +248,8 @@ DC.app = (() => {
     "rate-driver": () => { U.haptic([15, 25, 15]); U.confetti({ count: 60 }); U.toast("5 stars sent!", "Your imaginary driver is thrilled", "⭐"); },
 
     "claim-daily": () => claimDaily(),
-    "bot-choice": (el) => DC.views.shopper.choose(el.dataset.id),
+    "bot-send": () => DC.views.shopper.sendFromInput(),
+    "bot-suggest": (el) => DC.views.shopper.suggest(el.dataset.id),
     "unbox-order": (el) => unboxOrder(el.dataset.id),
     "write-review": () => DC.views.product.openReview(),
     "review-star": (el) => DC.views.product.setStars(Number(el.dataset.id), el),
@@ -430,9 +434,58 @@ DC.app = (() => {
     }, 8 * 60000);
   };
 
+  /* ── DopaBot floating companion ─────────────────────────── */
+  // A little animated circle that drifts along the screen edges and
+  // opens the shopper chat when tapped. Roaming is done by tweening
+  // `top`/`left` between random anchor points; the constant bobbing
+  // lives in CSS on the inner span so the two never fight.
+  const initBotFab = () => {
+    const fab = document.createElement("button");
+    fab.id = "dopabot-fab";
+    fab.setAttribute("aria-label", "Chat with DopaBot");
+    fab.innerHTML = `<span class="fab-face">🤖</span><span class="fab-say" hidden></span>`;
+    fab.addEventListener("click", () => { U.haptic(10); DC.sound.play("pluck"); go("shopper"); });
+    document.body.appendChild(fab);
+
+    const face = fab.querySelector(".fab-face");
+    const say = fab.querySelector(".fab-say");
+
+    // Drift to a new spot every few seconds (right edge mostly,
+    // occasional trip to the left, always clear of the tab bar).
+    const roam = () => {
+      const left = Math.random() < 0.22;
+      fab.classList.toggle("on-left", left);
+      fab.style.left = left ? "14px" : "auto";
+      fab.style.right = left ? "auto" : "14px";
+      fab.style.top = (16 + Math.random() * 48) + "vh";
+    };
+    roam();
+    setInterval(roam, 7000);
+
+    // Occasional emotes + speech bubbles (never while chatting).
+    const FACES = ["🤖", "🤖", "🤖", "🧐", "😏", "🫡", "🤑"];
+    setInterval(() => {
+      if (current.name === "shopper") return;
+      face.textContent = FACES[(Math.random() * FACES.length) | 0];
+      setTimeout(() => { face.textContent = "🤖"; }, 2200);
+    }, 12000);
+
+    const LINES = [
+      "Psst. Deals.", "Need picks? 👀", "Feed me a budget", "The wheel misses you",
+      "I found something…", "Cart looking light", "Fictional sale alert!",
+    ];
+    setInterval(() => {
+      if (current.name === "shopper" || document.getElementById("modal-root").children.length) return;
+      say.textContent = LINES[(Math.random() * LINES.length) | 0];
+      say.hidden = false;
+      setTimeout(() => { say.hidden = true; }, 3200);
+    }, 34000);
+  };
+
   /* ── Boot ───────────────────────────────────────────────── */
   const boot = () => {
     registerSW();
+    initBotFab();
 
     // Post-update confirmation (set just before the auto-reload above).
     try {

@@ -163,140 +163,319 @@ DC.views.collection = (() => {
   return { html };
 })();
 
-/* ── DopaBot — scripted personal shopper ────────────────────── */
+/* ── DopaBot — free-text AI personal shopper ────────────────────
+   Two brains, one bot:
+   1. Chrome's built-in on-device AI (Prompt API / Gemini Nano) when
+      the browser exposes it — a real language model, fully local,
+      keeping the "no external requests" privacy promise.
+   2. DopaBrain — a local intent engine (budget parsing, category
+      detection, catalog search, order/balance awareness) that always
+      works and needs nothing.
+   Product picks are ALWAYS resolved locally against the real catalog,
+   so the bot can never hallucinate items that don't exist. */
 DC.views.shopper = (() => {
   const U = DC.util, D = DC.data, S = DC.store, UI = DC.ui;
 
-  // Conversation state (session only).
-  let convo = [];              // { who: "bot"|"me", text }
-  let step = "cat";            // cat → budget → vibe → done
-  let picked = { cat: null, budget: null, vibe: null };
+  let convo = [];               // { who:"bot"|"me", text } | { html } | { typing:true }
+  let ctx = { cat: null, min: 0, max: Infinity, lastPicks: [] };
+  let aiSession = null;         // Prompt API session when available
+  let aiMode = false;
+  let aiChecked = false;
+  let busy = false;
 
-  const BUDGETS = [
-    { id: "b1", label: "Under SAR 100", test: (p) => UI.priceOf(p).price < 100 },
-    { id: "b2", label: "SAR 100–1,000", test: (p) => { const v = UI.priceOf(p).price; return v >= 100 && v <= 1000; } },
-    { id: "b3", label: "SAR 1,000+", test: (p) => UI.priceOf(p).price > 1000 },
-    { id: "b4", label: "Money is fictional", test: () => true },
-  ];
+  /* ── On-device AI (Chrome Prompt API) ───────────────────── */
+  const AI_SYSTEM = `You are DopaBot, the witty personal shopper inside DopaCart, a 100% fictional shopping app (fake money "DopaCash" in Saudi Riyals, nothing real is sold — lean into the joke).
+Categories: ${D.CATEGORIES.map((c) => c.id + " (" + c.name + ")").join(", ")}.
+Answer ONLY with minified JSON: {"reply":string,"category":string|null,"max":number|null,"min":number|null,"query":string|null}
+"reply" = your answer, max 35 words, playful. "category" = one category id if the user's request maps to one. "max"/"min" = SAR budget bounds if mentioned. "query" = 1-3 keywords to search the catalog if they want product suggestions, else null.`;
 
-  const VIBES = [
-    { id: "v1", label: "Best sellers", sort: (a, b) => b.pop - a.pop, filter: (p) => p.badges.includes("bestseller"), line: "the crowd favorites" },
-    { id: "v2", label: "New & trending", sort: (a, b) => b.pop - a.pop, filter: (p) => p.badges.includes("new") || p.badges.includes("trending") || p.badges.includes("hot"), line: "what's buzzing right now" },
-    { id: "v3", label: "Hidden gems", sort: (a, b) => a.reviews - b.reviews, filter: () => true, line: "under-the-radar finds" },
-    { id: "v4", label: "Treat myself", sort: (a, b) => UI.priceOf(b).price - UI.priceOf(a).price, filter: () => true, line: "the fancy stuff" },
-  ];
-
-  const BOT_OPENERS = [
-    "Hi! I'm DopaBot 🤖 — your personal shopper. Zero commission, zero real products.",
-    "First things first: what are we shopping for today?",
-  ];
-
-  const reset = () => {
-    convo = [];
-    step = "cat";
-    picked = { cat: null, budget: null, vibe: null };
-    BOT_OPENERS.forEach((t) => convo.push({ who: "bot", text: t }));
+  const initAI = async () => {
+    if (aiChecked) return;
+    aiChecked = true;
+    try {
+      const LM = window.LanguageModel || window.ai?.languageModel;
+      if (!LM) return;
+      const avail = await (LM.availability ? LM.availability() : LM.capabilities().then((c) => c.available));
+      if (avail !== "available" && avail !== "readily") return;   // never trigger a model download silently
+      aiSession = await LM.create({ initialPrompts: [{ role: "system", content: AI_SYSTEM }] });
+      aiMode = true;
+      const badge = document.getElementById("bot-mode");
+      if (badge) badge.textContent = "on-device AI · Gemini Nano";
+    } catch (_) { /* no AI in this browser — DopaBrain handles it */ }
   };
 
-  const chipsFor = () => {
-    if (step === "cat") {
-      return [...D.CATEGORIES.map((c) => ({ id: c.id, label: `${c.emoji} ${c.name}` })),
-        { id: "__any", label: "🎲 Surprise me" }];
+  const askAI = async (text) => {
+    const raw = await Promise.race([
+      aiSession.prompt(text),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 9000)),
+    ]);
+    const parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
+    if (typeof parsed.reply !== "string") throw new Error("bad shape");
+    return parsed;
+  };
+
+  /* ── DopaBrain: local intent engine ─────────────────────── */
+  const CAT_SYN = {
+    gaming: ["game", "gamer", "gaming", "console", "playstation", "ps5", "xbox", "nintendo", "keyboard", "mouse", "monitor", "vr", "stream"],
+    hair: ["hair", "curl", "curly", "shampoo", "conditioner", "pomade", "styling", "frizz", "scalp"],
+    fashion: ["fashion", "clothes", "clothing", "wear", "outfit", "shoe", "shoes", "sneaker", "hoodie", "jacket", "jeans", "cap", "chain", "sunglasses", "drip", "fit"],
+    apple: ["apple", "iphone", "ipad", "mac", "macbook", "airpods", "vision", "homepod", "airtag"],
+    tech: ["tech", "gadget", "camera", "speaker", "charger", "power", "tablet", "drone", "bulb"],
+    fitness: ["gym", "fitness", "workout", "exercise", "yoga", "run", "running", "weights", "dumbbell", "protein"],
+    food: ["food", "eat", "hungry", "pizza", "burger", "chicken", "shawarma", "coffee", "latte", "donut", "dessert", "snack", "drink", "meal", "albaik"],
+    home: ["home", "room", "kitchen", "light", "lighting", "lamp", "decor", "plant", "chair", "shelf", "airfryer"],
+    auto: ["car", "auto", "vehicle", "ride", "dashcam", "tire", "detail"],
+    office: ["office", "school", "study", "studying", "desk", "notebook", "pen", "planner", "backpack", "calculator"],
+  };
+
+  // Whole-word matching only — substring matching once sent
+  // "what is dopa cart" to Automotive because "cart" contains "car".
+  const hasWord = (t, w) => new RegExp("\\b" + w + "\\b").test(t);
+
+  const detectCat = (t) => {
+    for (const [id, words] of Object.entries(CAT_SYN)) {
+      if (words.some((w) => hasWord(t, w))) return id;
     }
-    if (step === "budget") return BUDGETS.map((b) => ({ id: b.id, label: b.label }));
-    if (step === "vibe") return VIBES.map((v) => ({ id: v.id, label: v.label }));
-    return [{ id: "__again", label: "🔄 Shop again" }];
+    const byName = D.CATEGORIES.find((c) => hasWord(t, c.name.toLowerCase()));
+    return byName ? byName.id : null;
   };
 
-  const resultsHtml = () => {
-    const pool = D.PRODUCTS
-      .filter((p) => (picked.cat ? p.cat === picked.cat : true))
-      .filter(picked.budget.test);
-    const vibe = picked.vibe;
-    let picks = pool.filter(vibe.filter).sort(vibe.sort);
-    if (picks.length < 3) picks = pool.sort(vibe.sort);   // vibe too narrow → widen
-    picks = picks.slice(0, 5);
-    return picks.length
-      ? `<div style="display:flex;flex-direction:column;gap:10px;margin:10px 0">${picks.map(UI.productLine).join("")}</div>`
-      : `<div class="empty-state" style="padding:22px"><div class="emoji">🫠</div><h3>Nothing fits</h3><p>Even fictional inventory has gaps. Try another budget!</p></div>`;
+  const parseBudget = (t) => {
+    const num = (s) => Number(String(s).replace(/,/g, ""));
+    const out = {};
+    let m = t.match(/between\s*(?:sar\s*)?([\d,]+)\s*(?:and|-|to)\s*(?:sar\s*)?([\d,]+)/);
+    if (m) return { min: num(m[1]), max: num(m[2]) };
+    m = t.match(/(?:under|below|less than|max|up to|at most|cheaper than)\s*(?:sar\s*)?([\d,]+)/);
+    if (m) out.max = num(m[1]);
+    m = t.match(/(?:over|above|more than|at least|min|starting)\s*(?:sar\s*)?([\d,]+)/);
+    if (m) out.min = num(m[1]);
+    if (out.max === undefined && out.min === undefined) {
+      if (/\b(cheap|budget|affordable)\b/.test(t)) out.max = 150;
+      if (/\b(premium|fancy|expensive|luxury|high.end|treat)\b/.test(t)) out.min = 800;
+    }
+    return out;
   };
+
+  const pickProducts = (query) => {
+    let pool = D.PRODUCTS.filter((p) => {
+      const price = UI.priceOf(p).price;
+      return (!ctx.cat || p.cat === ctx.cat) && price >= ctx.min && price <= ctx.max;
+    });
+    if (query) {
+      const tokens = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+      const hits = pool.filter((p) => {
+        const hay = (p.name + " " + p.sub + " " + p.blurb).toLowerCase();
+        return tokens.some((w) => hay.includes(w));
+      });
+      if (hits.length) pool = hits;
+    }
+    if (/\b(best|top|popular)\b/.test(query || "")) pool = pool.slice().sort((a, b) => b.pop - a.pop);
+    else pool = pool.slice().sort((a, b) => b.pop * b.rating - a.pop * a.rating);
+    return pool.slice(0, 5);
+  };
+
+  const picksHtml = (picks) =>
+    `<div style="display:flex;flex-direction:column;gap:10px;margin:10px 0">${picks.map(UI.productLine).join("")}</div>`;
+
+  const rand = (arr) => arr[(Math.random() * arr.length) | 0];
+
+  const budgetPhrase = () => {
+    if (ctx.max !== Infinity && ctx.min > 0) return ` between SAR ${ctx.min.toLocaleString()} and SAR ${ctx.max.toLocaleString()}`;
+    if (ctx.max !== Infinity) return ` under SAR ${ctx.max.toLocaleString()}`;
+    if (ctx.min > 0) return ` over SAR ${ctx.min.toLocaleString()}`;
+    return "";
+  };
+
+  /* The local brain: parse intent → { texts:[..], html? } */
+  const brainThink = (raw) => {
+    const t = raw.toLowerCase().trim();
+
+    if (/^(hi|hii+|hello|hey|yo|sup|salam|hala|marhaba)\b/.test(t) || t === "👋") {
+      return { texts: [rand([
+        "Hey hey! Tell me a vibe, a budget, or a craving — I'll fetch the goods. 🛍️",
+        "Welcome back to the fake-money paradise. What are we hunting today?",
+        "Hala! Say something like “gaming under 500” and watch me work.",
+      ])] };
+    }
+    if (/thank|thx|shukran/.test(t)) {
+      return { texts: [rand(["Anytime. My salary is your serotonin. 🤖", "You're welcome — leave 5 stars for the imaginary service!", "Shukran to YOU for shopping fictionally responsibly."])] };
+    }
+    if (/\b(order|delivery|courier|driver|track|package|shipment)\b/.test(t)) {
+      const o = S.s.orders[0];
+      if (!o) return { texts: ["No orders yet! Place one and I'll happily narrate the fake courier's journey. 🛵"] };
+      const prog = S.orderProgress(o);
+      return prog.pct >= 1
+        ? { texts: [`Your latest order ${o.num} was delivered ${U.timeAgo(o.createdAt + o.duration)}. ${o.unboxed ? "Already unboxed — nice." : "Psst — it's still waiting to be unboxed! 🎁"}`],
+            html: `<button class="btn btn-glass btn-block" data-action="track-order" data-id="${o.id}">📦 View ${o.num}</button>` }
+        : { texts: [`${o.num} is ${prog.stage.label.toLowerCase()} — ${o.driver.name} is on it, ETA ${U.fmtMins(prog.remaining)} min. The suspense is fictional but real. ⏱`],
+            html: `<button class="btn btn-primary btn-block" data-action="track-order" data-id="${o.id}">🛵 Track live</button>` };
+    }
+    if (/\b(balance|money|cash|coins?|wallet|broke|afford|rich)\b/.test(t) && !/\bunder|over|less|more\b/.test(t)) {
+      const lv = S.levelInfo();
+      return { texts: [`You're sitting on ${U.money(S.s.cash)} DopaCash, ${S.s.coins.toLocaleString()} coins, and ${S.s.spins} spin${S.s.spins === 1 ? "" : "s"} — Level ${lv.level} ${S.levelTitle(lv.level)}. ${S.s.cash > 10000 ? "Rich in ways that don't matter. Love it." : "The wheel in Rewards fixes empty pockets. 🎡"}`] };
+    }
+    if (/what is (this|dopa\s?cart)|about (this|the) app|is this real|real money/.test(t)) {
+      return { texts: ["DopaCart is a 100% fictional shopping app — fake money, fake products, fake couriers, real dopamine. You \"spend\" DopaCash, track imaginary deliveries, level up, and unlock rewards. Nothing here is real, especially me. 🤖"] };
+    }
+    if (/\b(help|what can you|how do|what do you)\b/.test(t)) {
+      return { texts: ["I speak fluent shopping: try “curly hair stuff”, “gaming under 500”, “surprise me”, “where's my order”, or “what's my balance”. Budget + category = my love language."] };
+    }
+
+    // Shopping intent — update context from this message.
+    const cat = detectCat(t);
+    if (cat) ctx.cat = cat;
+    const b = parseBudget(t);
+    if (b.min !== undefined) { ctx.min = b.min; if (b.max === undefined && ctx.max < b.min) ctx.max = Infinity; }
+    if (b.max !== undefined) { ctx.max = b.max; if (b.min === undefined && ctx.min > b.max) ctx.min = 0; }
+
+    if (/\b(cheaper|less|lower)\b/.test(t) && ctx.lastPicks.length) {
+      const cheapest = Math.min(...ctx.lastPicks.map((p) => UI.priceOf(p).price));
+      ctx.max = Math.max(25, Math.floor(cheapest * 0.9));
+    }
+    if (/\b(surprise|random|anything|whatever|idk)\b/.test(t)) { ctx.cat = null; }
+
+    const wantsStuff = cat || b.min !== undefined || b.max !== undefined ||
+      /\b(recommend|suggest|show|find|need|want|looking|buy|get|gift|something|surprise|random|cheaper|best|top|new|ideas?)\b/.test(t) ||
+      D.search(t).length > 0;
+
+    if (!wantsStuff) {
+      return { texts: [rand([
+        "Hmm, my circuits parsed that as vibes. Give me a category or a budget and I'll turn it into products. 🛒",
+        "Interesting. Anyway — want me to find you something? Try “tech under 300”.",
+        "I'm a shopper, not a philosopher. Name a craving!",
+      ])] };
+    }
+
+    const picks = pickProducts(t);
+    ctx.lastPicks = picks;
+    const catName = ctx.cat ? D.category(ctx.cat).name : null;
+
+    if (!picks.length) {
+      const hadBudget = budgetPhrase();
+      ctx.min = 0; ctx.max = Infinity;               // relax for next attempt
+      return { texts: [`Nothing in ${catName || "the catalog"}${hadBudget} — even fictional inventory has limits. I've loosened the budget filter; try me again.`] };
+    }
+    const intro = rand([
+      `Say less. ${picks.length} ${catName || "cross-category"} pick${picks.length === 1 ? "" : "s"}${budgetPhrase()}, ranked by pure algorithmic confidence:`,
+      `The algorithm has spoken${catName ? ` — ${catName} it is` : ""}. Behold${budgetPhrase() ? " (budget respected)" : ""}:`,
+      `On it. ${catName || "Everything"}${budgetPhrase()} — here's what the fictional crowd swears by:`,
+    ]);
+    const outro = rand([
+      "Tap one to inspect, hit + to grab it. Say “cheaper” and I'll shrink the prices.",
+      "Want a different lane? Just say a category or a budget.",
+      "My fee remains one (1) dopamine hit, payable on checkout.",
+    ]);
+    return { texts: [intro], html: picksHtml(picks), after: outro };
+  };
+
+  /* ── Conversation plumbing ──────────────────────────────── */
+  const pushTyping = () => { convo.push({ typing: true }); paintChat(); };
+  const clearTyping = () => { convo = convo.filter((m) => !m.typing); };
+
+  const paintChat = () => {
+    const box = document.getElementById("bot-chat");
+    if (!box) return;
+    box.innerHTML = chatInner();
+    scrollChat();
+  };
+
+  const chatInner = () => convo.map((m) => {
+    if (m.typing) return `<div class="bot-msg bot"><span class="bot-ava">🤖</span><span class="bot-bubble"><span class="typing-dots"><i></i><i></i><i></i></span></span></div>`;
+    if (m.html) return `<div class="bot-results">${m.html}</div>`;
+    return `<div class="bot-msg ${m.who}">${m.who === "bot" ? '<span class="bot-ava">🤖</span>' : ""}<span class="bot-bubble">${U.esc(m.text)}</span></div>`;
+  }).join("");
+
+  const scrollChat = () =>
+    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 50);
+
+  const botReply = (result) => {
+    clearTyping();
+    convo.push({ who: "bot", text: result.texts[0] });
+    if (result.html) convo.push({ html: result.html });
+    if (result.after) convo.push({ who: "bot", text: result.after });
+    paintChat();
+    DC.sound.play("pluck");
+  };
+
+  const send = async (raw) => {
+    const text = raw.trim();
+    if (!text || busy) return;
+    busy = true;
+    U.haptic(8);
+    convo.push({ who: "me", text });
+    pushTyping();
+
+    const thinkMs = 500 + Math.random() * 600;
+    if (aiMode && aiSession) {
+      try {
+        const a = await askAI(text);
+        // Merge the model's filters into context, then resolve real products locally.
+        if (a.category && D.category(a.category)) ctx.cat = a.category;
+        if (typeof a.max === "number") ctx.max = a.max;
+        if (typeof a.min === "number") ctx.min = a.min;
+        let html = null;
+        if (a.query) {
+          const picks = pickProducts(a.query);
+          ctx.lastPicks = picks;
+          if (picks.length) html = picksHtml(picks);
+        }
+        botReply({ texts: [a.reply], html });
+        busy = false;
+        return;
+      } catch (_) { /* model hiccup → DopaBrain takes the wheel */ }
+    }
+    setTimeout(() => {
+      botReply(brainThink(text));
+      busy = false;
+    }, thinkMs);
+  };
+
+  const sendFromInput = () => {
+    const input = document.getElementById("bot-input");
+    if (!input) return;
+    const v = input.value;
+    input.value = "";
+    send(v);
+  };
+
+  const SUGGESTIONS = ["🎮 Gaming under 500", "💇 Curly hair routine", "🎲 Surprise me", "📦 Where's my order?", "💵 What's my balance?"];
 
   const html = () => {
-    if (!convo.length) reset();
+    if (!convo.length) {
+      convo.push({ who: "bot", text: "Hi! I'm DopaBot 🤖 — your personal shopper. Type anything: a craving, a budget, a category… I'll turn it into (fictional) products." });
+    }
     return `
     <div class="page-head">
       <button class="icon-btn" data-action="back" aria-label="Back">←</button>
       <div style="flex:1">
         <div class="page-title">🤖 DopaBot</div>
-        <div class="page-sub">Personal shopper · always online · never right</div>
+        <div class="page-sub" id="bot-mode">${aiMode ? "on-device AI · Gemini Nano" : "DopaBrain™ · runs entirely on your device"}</div>
       </div>
     </div>
 
-    <div class="bot-chat" id="bot-chat">
-      ${convo.map((m) => m.html
-        ? `<div class="bot-results">${m.html}</div>`
-        : `<div class="bot-msg ${m.who}">${m.who === "bot" ? '<span class="bot-ava">🤖</span>' : ""}<span class="bot-bubble">${U.esc(m.text)}</span></div>`).join("")}
-    </div>
+    <div class="bot-chat" id="bot-chat">${chatInner()}</div>
 
-    <div class="chip-row" style="flex-wrap:wrap;margin-top:12px" id="bot-chips">
-      ${chipsFor().map((c) => `<button class="chip" data-action="bot-choice" data-id="${c.id}">${c.label}</button>`).join("")}
+    <div class="chip-row" style="flex-wrap:wrap;margin-top:12px">
+      ${SUGGESTIONS.map((s) => `<button class="chip" data-action="bot-suggest" data-id="${U.esc(s)}">${s}</button>`).join("")}
+    </div>
+    <div class="bot-input-row">
+      <input class="field" id="bot-input" placeholder="Ask DopaBot anything…" autocomplete="off" aria-label="Message DopaBot">
+      <button class="btn btn-primary bot-send" data-action="bot-send" aria-label="Send">➤</button>
     </div>
     <div class="spacer"></div>`;
   };
 
-  /* One choice tapped → user bubble, bot "typing", then next step. */
-  const choose = (id) => {
-    U.haptic(8);
-    const chips = document.getElementById("bot-chips");
-    if (chips) chips.innerHTML = "";                      // no double-taps
-
-    if (step === "cat") {
-      const cat = id === "__any" ? null : D.category(id);
-      picked.cat = cat ? cat.id : null;
-      convo.push({ who: "me", text: cat ? `${cat.emoji} ${cat.name}` : "🎲 Surprise me" });
-      step = "budget";
-      botSay([cat ? `${cat.name} — excellent taste.` : "Chaos mode. I respect it.", "What's the fictional budget?"]);
-    } else if (step === "budget") {
-      picked.budget = BUDGETS.find((b) => b.id === id) || BUDGETS[3];
-      convo.push({ who: "me", text: picked.budget.label });
-      step = "vibe";
-      botSay(["Noted. And what's the vibe today?"]);
-    } else if (step === "vibe") {
-      picked.vibe = VIBES.find((v) => v.id === id) || VIBES[0];
-      convo.push({ who: "me", text: picked.vibe.label });
-      step = "done";
-      botSay(["Give me a second, consulting the algorithm… 🔮"], () => {
-        convo.push({ who: "bot", text: `Here's my curation — ${picked.vibe.line}, hand-picked by a very confident robot:` });
-        convo.push({ html: resultsHtml() });
-        convo.push({ who: "bot", text: "Tap anything to see it, or the + to grab it. My fee is one (1) dopamine hit." });
-        DC.app.softRender();
-        scrollChat();
-      });
-    } else {
-      reset();
-      DC.app.render();
-      return;
-    }
-    DC.app.softRender();
+  const mounted = () => {
+    initAI();
+    const input = document.getElementById("bot-input");
+    const onKey = (e) => { if (e.key === "Enter") sendFromInput(); };
+    input?.addEventListener("keydown", onKey);
     scrollChat();
+    return () => input?.removeEventListener("keydown", onKey);
   };
 
-  /* Bot messages appear one by one with a small typing delay. */
-  const botSay = (lines, after) => {
-    let delay = 450;
-    lines.forEach((t) => {
-      setTimeout(() => {
-        convo.push({ who: "bot", text: t });
-        DC.app.softRender();
-        scrollChat();
-      }, delay);
-      delay += 600;
-    });
-    if (after) setTimeout(after, delay + 200);
-  };
+  // Strip the emoji prefix off suggestion chips before sending.
+  const suggest = (label) => send(label.replace(/^[^\w]+/, ""));
 
-  const scrollChat = () =>
-    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 60);
-
-  return { html, choose, reset };
+  return { html, mounted, sendFromInput, suggest };
 })();
