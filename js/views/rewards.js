@@ -66,8 +66,20 @@ DC.views.rewards = (() => {
     }
   };
   const SEG_ANGLE = 360 / SEGMENTS.length;
+  const SPIN_MS = 2600;                 // single-spin animation (was 4300 — snappier now)
   let spinning = false;
   let wheelRotation = 0;
+
+  // Weighted segment pick — shared by single spin and spin-all.
+  const pickIdx = () => {
+    const totalW = SEGMENTS.reduce((a, s) => a + s.weight, 0);
+    let roll = Math.random() * totalW;
+    for (let i = 0; i < SEGMENTS.length; i++) {
+      roll -= SEGMENTS[i].weight;
+      if (roll <= 0) return i;
+    }
+    return SEGMENTS.length - 1;
+  };
 
   const wheelHtml = () => {
     const stops = SEGMENTS.map((s, i) =>
@@ -182,9 +194,13 @@ DC.views.rewards = (() => {
       <button class="btn btn-primary btn-block" id="spin-btn" data-action="spin" ${S.s.spins > 0 ? "" : "disabled"}>
         ${S.s.spins > 0 ? `Spin (${S.s.spins} left)` : "No spins left"}
       </button>
+      ${S.s.spins >= 2 ? `<div style="height:8px"></div>
+      <button class="btn btn-glass btn-block" id="spin-all-btn" data-action="spin-all">⚡ Spin all ${S.s.spins} at once</button>` : ""}
       <div style="height:8px"></div>
       <button class="btn btn-ghost btn-block" id="skip-spin-btn" data-action="skip-spin" hidden>Skip animation ⏭️</button>
       <button class="btn btn-glass btn-block" id="buy-spin-btn" data-action="buy-spin">Buy a spin · 100 🪙</button>
+      ${S.s.coins >= 200 ? `<div style="height:8px"></div>
+      <button class="btn btn-glass btn-block" id="buy-all-btn" data-action="buy-all-spins">Buy max · ${Math.floor(S.s.coins / 100)} spins (${(Math.floor(S.s.coins / 100) * 100).toLocaleString()} 🪙)</button>` : ""}
       <p class="tiny muted" style="margin-top:10px">Free spin every day, plus one per level-up. Stack as many as you like.<br>
         ${(() => { const t = S.tierInfo().tier; return t.spinMult > 1
           ? `${t.emoji} ${t.name} perk: payouts ×${t.spinMult}, coupon prize ${D.COUPONS[t.coupon].pct}% off.`
@@ -248,15 +264,9 @@ DC.views.rewards = (() => {
     if (spinning || !S.useSpin()) return;
     spinning = true;
     U.haptic(15);
-    DC.sound.spinTicks(4300);          // ratchet that slows with the wheel
+    DC.sound.spinTicks(SPIN_MS);        // ratchet that slows with the wheel
 
-    // Weighted pick, then land the wheel on that segment.
-    const totalW = SEGMENTS.reduce((a, s) => a + s.weight, 0);
-    let roll = Math.random() * totalW, idx = 0;
-    for (let i = 0; i < SEGMENTS.length; i++) {
-      roll -= SEGMENTS[i].weight;
-      if (roll <= 0) { idx = i; break; }
-    }
+    const idx = pickIdx();
 
     const wheel = document.getElementById("spin-wheel");
     // 5 full revolutions + landing angle (pointer sits at top).
@@ -269,7 +279,75 @@ DC.views.rewards = (() => {
     const sb = document.getElementById("spin-btn");
     if (sb) { sb.disabled = true; sb.textContent = "Spinning…"; }
 
-    pendingSpin = { idx, timeout: setTimeout(() => finishSpin(idx), 4300) };
+    pendingSpin = { idx, timeout: setTimeout(() => finishSpin(idx), SPIN_MS) };
+  };
+
+  /* Resolve every available spin at once, then show one aggregate haul.
+     Bonus spins won during the batch stay in the wallet for next time
+     (we consume only the spins available when the button was pressed). */
+  const spinAll = () => {
+    if (spinning) return;
+    const n = S.s.spins;
+    if (n <= 0) { U.toast("No spins left", "Buy or earn some first", "🎡"); return; }
+    spinning = true;
+    U.haptic(15);
+    DC.sound.spinTicks(1150);
+
+    const tier = S.tierInfo().tier;
+    const tally = { cash: 0, coins: 0, xp: 0, spins: 0, coupon: 0, box: 0 };
+    // Suppress per-level popups during the batch — the summary is the
+    // single reward dialog (level-up bonuses still apply + notify).
+    DC.app.setLevelUpQuiet(true);
+    try {
+      for (let i = 0; i < n; i++) {
+        if (!S.useSpin()) break;
+        const seg = SEGMENTS[pickIdx()];
+        segReward(seg).apply();
+        const v = seg.base ? Math.round(seg.base * tier.spinMult) : 0;
+        if (seg.kind === "cash") tally.cash += v;
+        else if (seg.kind === "coins") tally.coins += v;
+        else if (seg.kind === "xp") tally.xp += v;
+        else if (seg.kind === "spins") tally.spins += seg.base;
+        else if (seg.kind === "coupon") tally.coupon += 1;
+        else if (seg.kind === "box") tally.box += 1;
+      }
+    } finally {
+      DC.app.setLevelUpQuiet(false);
+    }
+
+    // Quick whirl for flavor, then the summary.
+    const wheel = document.getElementById("spin-wheel");
+    wheelRotation += 6 * 360 + Math.floor(Math.random() * 360);
+    if (wheel) {
+      wheel.style.transition = "transform 1.15s cubic-bezier(0.15,0.75,0.2,1)";
+      wheel.style.transform = `rotate(${wheelRotation}deg)`;
+    }
+    const sb = document.getElementById("spin-btn"); if (sb) { sb.disabled = true; sb.textContent = "Spinning…"; }
+    const sab = document.getElementById("spin-all-btn"); if (sab) sab.disabled = true;
+
+    setTimeout(() => {
+      spinning = false;
+      U.haptic([30, 40, 30, 40, 60]);
+      DC.sound.play("levelup");
+      U.confetti({ count: 200 });
+      const row = (label, val) => `<div style="display:flex;justify-content:space-between;font-size:14px"><span class="muted">${label}</span><b>${val}</b></div>`;
+      const rows = [];
+      if (tally.cash) rows.push(row("💵 DopaCash", `+SAR ${tally.cash.toLocaleString()}`));
+      if (tally.coins) rows.push(row("🪙 Coins", `+${tally.coins.toLocaleString()}`));
+      if (tally.xp) rows.push(row("⭐ XP", `+${tally.xp.toLocaleString()}`));
+      if (tally.spins) rows.push(row("🎡 Bonus spins", `+${tally.spins}`));
+      if (tally.coupon) rows.push(row(`🏷️ Coupon ${tier.coupon}`, `×${tally.coupon}`));
+      if (tally.box) rows.push(row("📦 Mystery Box", "ready!"));
+      UI.modal(`
+        <div class="reward-burst">🎡</div>
+        <h3 style="margin:6px 0 2px">${n} spin${n === 1 ? "" : "s"} done!</h3>
+        <p class="tiny muted" style="margin-bottom:12px">Your whole haul${tier.spinMult > 1 ? ` · ×${tier.spinMult} ${tier.name} bonus baked in` : ""}:</p>
+        <div style="display:flex;flex-direction:column;gap:9px;text-align:left;margin-bottom:4px">${rows.join("")}</div>
+        ${tally.spins ? `<p class="tiny muted" style="margin-top:12px">You won ${tally.spins} more spin${tally.spins === 1 ? "" : "s"} — go again? 🎡</p>` : ""}
+        <div style="height:14px"></div>
+        <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Collect it all 🤑</button>
+      `, "dialog", true, () => DC.app.render());
+    }, 1200);
   };
 
   // Jump the wheel straight to its landing spot and pay out now.
@@ -298,6 +376,18 @@ DC.views.rewards = (() => {
       DC.app.render();
       U.toast("Spin purchased!", "May the odds be dopamine-flavored", "🎡");
     }
+  };
+
+  // Buy as many spins as coins allow, in one tap (100 🪙 each).
+  const buyAllSpins = () => {
+    const n = Math.floor(S.s.coins / 100);
+    if (n <= 0) { U.toast("Not enough coins", "You need at least 100 🪙 for a spin", "🪙"); return; }
+    S.spendCoins(n * 100);
+    S.s.spins += n; S.save();
+    U.haptic([12, 20, 12]);
+    DC.sound.play("zip");
+    if (!spinning) DC.app.render();
+    U.toast(`Bought ${n} spin${n === 1 ? "" : "s"}!`, `${S.s.spins} ready · ${S.s.coins.toLocaleString()} coins left`, "🎡");
   };
 
   /* ── Mystery box ────────────────────────────────────────── */
@@ -372,5 +462,5 @@ DC.views.rewards = (() => {
     return () => clearInterval(iv);
   };
 
-  return { html, mounted, spin, skipSpin, buySpin, openBox, achInfo };
+  return { html, mounted, spin, spinAll, skipSpin, buySpin, buyAllSpins, openBox, achInfo };
 })();

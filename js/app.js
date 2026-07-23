@@ -109,7 +109,14 @@ DC.app = (() => {
   };
 
   /* ── Level-up dialog (deferred if another modal is open) ── */
+  // Batch operations (e.g. Spin All) suppress the per-level popup so a
+  // single summary modal is the only reward dialog — level-up cash /
+  // coins / spins still apply, and the notification still fires.
+  let levelUpQuiet = false;
+  const setLevelUpQuiet = (v) => { levelUpQuiet = !!v; };
+
   const showLevelUp = (level) => {
+    if (levelUpQuiet) return;
     const attempt = (tries) => {
       if (document.getElementById("modal-root").children.length && tries > 0) {
         setTimeout(() => attempt(tries - 1), 700);
@@ -260,8 +267,10 @@ DC.app = (() => {
     "redeem-gift": () => DC.views.cart.redeemGift(),
     "confirm-redeem": () => DC.views.cart.confirmRedeem(),
     spin: () => DC.views.rewards.spin(),
+    "spin-all": () => DC.views.rewards.spinAll(),
     "skip-spin": () => DC.views.rewards.skipSpin(),
     "buy-spin": () => DC.views.rewards.buySpin(),
+    "buy-all-spins": () => DC.views.rewards.buyAllSpins(),
     "open-box": () => DC.views.rewards.openBox(),
     "ach-info": (el) => DC.views.rewards.achInfo(el.dataset.id),
 
@@ -584,9 +593,17 @@ DC.app = (() => {
     }, 34000);
   };
 
+  // Ask the platform to keep us portrait. Works on installed Android
+  // PWAs; iOS/desktop throw or ignore it (the CSS #rotate-lock overlay
+  // covers those), so it's fully guarded.
+  const lockPortrait = () => {
+    try { screen.orientation?.lock?.("portrait").catch(() => {}); } catch (_) {}
+  };
+
   /* ── Boot ───────────────────────────────────────────────── */
   const boot = () => {
     registerSW();
+    lockPortrait();
     initBotFab();
 
     // Post-update confirmation (set just before the auto-reload above).
@@ -657,5 +674,5 @@ DC.app = (() => {
     boot();
   }
 
-  return { go, back, render, softRender, refreshBadges, showLevelUp, promptInstall };
+  return { go, back, render, softRender, refreshBadges, showLevelUp, setLevelUpQuiet, promptInstall };
 })();

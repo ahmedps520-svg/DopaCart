@@ -61,6 +61,14 @@
   <div id="toast-root" class="toast-root" aria-live="polite"></div>
   <canvas id="confetti-canvas" class="confetti-canvas" aria-hidden="true"></canvas>
 
+  <!-- Portrait-only: shown when a phone is turned sideways (iOS ignores the
+       manifest's orientation lock, so this is the reliable fallback). -->
+  <div id="rotate-lock" aria-hidden="true">
+    <div class="rl-emoji">📱</div>
+    <div class="rl-title">Please rotate to portrait</div>
+    <div class="rl-sub">DopaCart is a one-handed, upright kind of app.</div>
+  </div>
+
   <!-- ═══ Scripts (classic scripts — works from file:// and GitHub Pages) ═══ -->
   <script src="./js/utils.js"></script>
   <script src="./js/sound.js"></script>

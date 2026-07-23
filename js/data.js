@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.7.3";
+  const VERSION = "1.7.4";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -443,6 +443,7 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.7.4", notes: ["Faster spins — the wheel now settles in 2.6s instead of 4.2s", "⚡ Spin all — burn every spin at once and get one combined haul summary (bonus spins you win stay for the next round)", "Buy max — top up as many spins as your coins allow in a single tap", "App now stays in portrait; turned sideways on a phone, it politely asks you to rotate back"] },
     { v: "1.7.3", notes: ["DopaBot's bubble is now draggable — grab him, drop him anywhere, and he spring-snaps to the nearest edge with a satisfying pop", "He remembers where you put him (even after closing the app) and stops auto-wandering once you've placed him", "Grows under your finger while dragging, stays clear of the tab bar, and survives screen rotation"] },
     { v: "1.7.2", notes: ["Fixed: DopaBot now knows your real balance, coins, spins, level, VIP tier, streak and orders — answered straight from your save, always accurate", "These answers now work identically on every browser, so iPhone/Safari home-screen users get the same smart assistant (the extra on-device AI boost is Chrome-only, but DopaBrain runs everywhere)", "DopaBot can also open Rewards, Collection or your live order from chat"] },
     { v: "1.7.1", notes: ["Real photos for the 11 products that were emoji-only: SteelSeries mousepad, Anker charger, Fitbit Charge 6, Chemex, Baseus car vacuum, Little Trees, iOttie mount, WeatherTech liners, Michelin inflator, Turtle Wax, Amazon Basics organizer", "Fixed the Govee LED Strip 5m photo — now actually shows LED strip lighting", "Every product in the catalog now has an image"] },
