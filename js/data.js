@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.7.0";
+  const VERSION = "1.7.2";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -100,7 +100,7 @@ DC.data = (() => {
       ["Sony PlayStation 5", 2299, "🎮", "PlayStation", ["bestseller", "hot"], "The white monolith itself. Load times so short you'll miss the loading screens. Almost.", un("1606813907291-d86efa9b94db")],
       ["Razer BlackWidow V4 Pro", 899, "⌨️", "PC Gaming", ["trending"], "Clicky switches, macro keys, and enough RGB to be seen from orbit.", un("1547394765-185e1e68f34e")],
       ["Logitech G Pro X Superlight 2", 549, "🖱️", "PC Gaming", ["bestseller"], "60 grams of pure aim. If you still miss, that one's on you.", un("1527814050087-3793815479db")],
-      ["SteelSeries QcK Heavy XXL", 149, "🌌", "Accessories", ["new"], "A desk-sized runway for your mouse. Stitched edges, zero drag, infinite vibes.", null],
+      ["SteelSeries QcK Heavy XXL", 149, "🌌", "Accessories", ["new"], "A desk-sized runway for your mouse. Stitched edges, zero drag, infinite vibes.", un("1629429408209-1f912961dbd8")],
       ["Alienware 27 Gaming Monitor", 2499, "📺", "PC Gaming", ["staff"], "240Hz of buttery frames. You'll blame lag on yourself for once.", un("1593640408182-31c70c8268f5")],
       ["Xbox Elite Series 2 Controller", 699, "🎮", "Xbox", ["trending"], "Swappable paddles, trigger stops, and grip rated for rage-quit resistance.", wm("thumb/6/67/Microsoft-Xbox-One-controller.jpg/960px-Microsoft-Xbox-One-controller.jpg")],
       ["Logitech G29 Driving Force", 1099, "🏎️", "Sim Racing", ["limited"], "Force feedback strong enough to make you apologize to the curb you clipped.", wm("thumb/e/ed/Logitech_G29_steering_wheel.jpg/960px-Logitech_G29_steering_wheel.jpg")],
@@ -177,7 +177,7 @@ DC.data = (() => {
     ],
     tech: [
       ["Samsung Galaxy Tab S9", 2999, "📲", "Mobile", [], "Laptop power, couch energy. The S Pen attaches magnetically and vanishes mysteriously.", un("1544244015-0df4b3ffc6b0")],
-      ["Anker Nano II 65W", 149, "⚡", "Power", ["new"], "Charges your laptop, phone, and buds at once. Smaller than a plum.", null],
+      ["Anker Nano II 65W", 149, "⚡", "Power", ["new"], "Charges your laptop, phone, and buds at once. Smaller than a plum.", un("1709236709044-159f627b7971")],
       ["Anker PowerCore 20K", 199, "🔋", "Power", ["bestseller"], "Twenty thousand milliamps between you and 1% panic.", un("1609091839311-d5365f9ff1c5")],
       ["JBL Charge 5", 649, "🔊", "Audio", ["trending"], "Room-filling sound in every direction. Neighbors become fans, involuntarily.", un("1608043152269-423dbba4e7e1")],
       ["Sony α7 IV", 9999, "📷", "Cameras", ["staff"], "Full-frame magic. Your food pics are about to get a gallery show.", un("1516035069371-29a1b244cc32")],
@@ -193,7 +193,7 @@ DC.data = (() => {
       ["Nike Pegasus 41", 599, "🏃", "Gear", ["hot"], "The workhorse of running shoes. PRs voluntary but statistically likely.", un("1542291026-7eec264c27ff")],
       ["Manduka PRO Yoga Mat", 499, "🧘", "Recovery", ["trending"], "Extra thick, zero slip. Ideal for yoga, stretching, and lying down dramatically.", un("1544367567-0f2fcb009e0b")],
       ["TriggerPoint GRID Roller", 179, "🪵", "Recovery", [], "Hurts so good. Your IT band will write you a thank-you note eventually.", un("1600881333168-2ef49b341f30")],
-      ["Fitbit Charge 6", 649, "📈", "Gear", ["new"], "Counts steps, reps, and streaks. Judges you silently but supportively.", null],
+      ["Fitbit Charge 6", 649, "📈", "Gear", ["new"], "Counts steps, reps, and streaks. Judges you silently but supportively.", un("1579721840641-7d0e67f1204e")],
       ["Harbinger Lifting Kit", 99, "🧤", "Equipment", [], "Straps, wraps, and grip for days. Calluses sold separately.", un("1526506118085-60ce8714f8c5")],
     ],
     food: [
@@ -211,28 +211,28 @@ DC.data = (() => {
       ["Honey Butter Croissant", 12, "🥐", "Desserts", ["staff"], "Seventy-two layers of laminated joy. Flake radius: two meters.", un("1555507036-ab1f4038808a")],
     ],
     home: [
-      ["Govee LED Strip 5m", 129, "💫", "Lighting", ["bestseller"], "Music-sync mode turns your room into the aurora borealis, localized entirely in your room.", un("1519608487953-e999c86e7455")],
+      ["Govee LED Strip 5m", 129, "💫", "Lighting", ["bestseller"], "Music-sync mode turns your room into the aurora borealis, localized entirely in your room.", un("1500067318459-77a2667d9c54")],
       ["Xiaomi Mi Desk Lamp Pro", 149, "🪔", "Lighting", [], "Infinite dimming and an arc that looks like modern art.", un("1507473885765-e6ed057f782c")],
       ["Monstera Deliciosa Plant", 89, "🪴", "Decor", ["staff"], "Thrives on neglect and compliments. Big-leaf energy included.", un("1614594975525-e45190c55d0b")],
       ["Lounge Accent Armchair", 899, "🛋️", "Decor", ["bestseller"], "The reading chair that becomes the everything chair within a week.", un("1567016432779-094069958ea5")],
       ["Neon Wall Art Sign", 299, "🖼️", "Decor", [], "LED glow that makes any wall the main character.", un("1563089145-599997674d42")],
       ["IKEA KALLAX Shelf Unit", 399, "🗄️", "Storage", [], "Eight cubes that turn chaos into 'aesthetic minimalism'.", un("1594620302200-9a762244a156")],
       ["Philips Airfryer XXL", 899, "🍳", "Kitchen", ["trending"], "Crispy everything, zero guilt, one appliance now responsible for 80% of your meals.", un("1556909114-f6e7ad7d3136")],
-      ["Chemex Pour-Over Set", 349, "🫖", "Kitchen", [], "Glass-hourglass coffee and the moral high ground over pod machines.", null],
+      ["Chemex Pour-Over Set", 349, "🫖", "Kitchen", [], "Glass-hourglass coffee and the moral high ground over pod machines.", un("1648081596668-beccca435ddd")],
       ["Vitruvi Stone Diffuser", 249, "🕯️", "Decor", [], "Ultrasonic mist plus 'Rainy Bookstore' oil. Your room, but cinematic.", un("1608571423902-eed4a5ad8108")],
       ["Braun Classic Alarm Clock", 199, "🕰️", "Decor", ["limited"], "Dieter Rams design. Waking up is still bad, but it looks incredible.", un("1563861826100-9cb868fdbe1c")],
     ],
     auto: [
       ["Meguiar's Complete Detail Kit", 249, "🧽", "Care", [], "Foam cannon, microfiber army, and a shine that resets your car to showroom.", un("1520340356584-f9917d1eea6f")],
-      ["Baseus A2 Pro Car Vacuum", 179, "🌪️", "Gadgets", [], "Cordless cyclone that finds fries from road trips you don't remember taking.", null],
-      ["Little Trees Black Ice 3-Pack", 25, "🌲", "Interior", ["new"], "Smells like a forest that also went to design school.", null],
-      ["iOttie MagSafe Car Mount", 129, "🧲", "Gadgets", ["bestseller"], "Snaps on one-handed at a red light. Holds through potholes and questionable playlists.", null],
+      ["Baseus A2 Pro Car Vacuum", 179, "🌪️", "Gadgets", [], "Cordless cyclone that finds fries from road trips you don't remember taking.", un("1638639756421-d1d8b04bd8d9")],
+      ["Little Trees Black Ice 3-Pack", 25, "🌲", "Interior", ["new"], "Smells like a forest that also went to design school.", un("1764788127543-f7b59ef09783")],
+      ["iOttie MagSafe Car Mount", 129, "🧲", "Gadgets", ["bestseller"], "Snaps on one-handed at a red light. Holds through potholes and questionable playlists.", un("1759256243611-502772ac391b")],
       ["70mai A800S Dash Cam", 449, "📹", "Gadgets", ["staff"], "4K front and rear witness. Night vision sharp enough to read regret.", un("1449965408869-eaa3f722e40d")],
-      ["WeatherTech FloorLiner Set", 599, "🛞", "Interior", [], "Laser-measured fit. Contains spills, mud, and juice box incidents.", null],
-      ["Michelin Digital Tire Inflator", 199, "🎈", "Gadgets", [], "Auto-stops at target PSI. The low-pressure light fears you now.", null],
+      ["WeatherTech FloorLiner Set", 599, "🛞", "Interior", [], "Laser-measured fit. Contains spills, mud, and juice box incidents.", un("1760818078878-6948eb2fc2cf")],
+      ["Michelin Digital Tire Inflator", 199, "🎈", "Gadgets", [], "Auto-stops at target PSI. The low-pressure light fears you now.", un("1694532438941-06bb0d95dae5")],
       ["Govee Car Underglow Kit", 229, "🚗", "Interior", ["limited"], "App-controlled glow. Technically street-legal in the fictional universe.", un("1544636331-e26879cd4d9b")],
-      ["Turtle Wax Ceramic Spray", 89, "✨", "Care", [], "Water beads so hard it looks like CGI. Lasts six imaginary months.", null],
-      ["Amazon Basics Trunk Organizer", 99, "🕸️", "Interior", [], "Groceries stay upright. The rogue orange era is over.", null],
+      ["Turtle Wax Ceramic Spray", 89, "✨", "Care", [], "Water beads so hard it looks like CGI. Lasts six imaginary months.", un("1708805282695-ef186db20192")],
+      ["Amazon Basics Trunk Organizer", 99, "🕸️", "Interior", [], "Groceries stay upright. The rogue orange era is over.", un("1722843646530-0ec625b8e34f")],
     ],
     office: [
       ["Moleskine Classic Notebook", 119, "📓", "Paper", [], "The notebook of Hemingway and Picasso. Your grocery lists are in good company.", un("1531346878377-a5be20888e57")],
@@ -443,6 +443,8 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.7.2", notes: ["Fixed: DopaBot now knows your real balance, coins, spins, level, VIP tier, streak and orders — answered straight from your save, always accurate", "These answers now work identically on every browser, so iPhone/Safari home-screen users get the same smart assistant (the extra on-device AI boost is Chrome-only, but DopaBrain runs everywhere)", "DopaBot can also open Rewards, Collection or your live order from chat"] },
+    { v: "1.7.1", notes: ["Real photos for the 11 products that were emoji-only: SteelSeries mousepad, Anker charger, Fitbit Charge 6, Chemex, Baseus car vacuum, Little Trees, iOttie mount, WeatherTech liners, Michelin inflator, Turtle Wax, Amazon Basics organizer", "Fixed the Govee LED Strip 5m photo — now actually shows LED strip lighting", "Every product in the catalog now has an image"] },
     { v: "1.7.0", notes: ["DopaBot is now a real conversation — type anything: \"gaming under 500\", \"curly hair routine\", \"where's my order\", \"surprise me\"…", "Uses Chrome's built-in on-device AI (Gemini Nano) when your browser has it; otherwise the new DopaBrain™ intent engine — either way, everything stays on your device", "Product picks always come from the real catalog, never made up", "DopaBot now floats around the app as an animated bubble — drifts, bobs, emotes, and occasionally whispers about deals. Tap him to chat"] },
     { v: "1.6.3", notes: ["Spin payouts now scale with your VIP tier — ×1.25 Silver up to ×2 Diamond on cash, coins and XP (jackpot hits SAR 10,000 at Diamond)", "Tier-exclusive spin coupons: 30% Bronze → 35% Silver → 40% Gold → 45% Platinum → 50% Diamond", "Fixed daily streak: a broken streak now resets to 0 right away (with a heads-up) instead of showing a stale count that silently collapsed on your next claim"] },
     { v: "1.6.2", notes: ["Service worker now revalidates with the server on every fetch — the browser's HTTP cache can never serve stale app files again (fixes stuck old versions on hosts like GitHub Pages)", "New in Settings: Check for Updates — fetches the latest version on demand"] },

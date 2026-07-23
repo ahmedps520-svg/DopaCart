@@ -186,8 +186,16 @@ DC.views.shopper = (() => {
   /* ── On-device AI (Chrome Prompt API) ───────────────────── */
   const AI_SYSTEM = `You are DopaBot, the witty personal shopper inside DopaCart, a 100% fictional shopping app (fake money "DopaCash" in Saudi Riyals, nothing real is sold — lean into the joke).
 Categories: ${D.CATEGORIES.map((c) => c.id + " (" + c.name + ")").join(", ")}.
+Each message may start with a [state: ...] line giving the user's LIVE wallet/level — use those exact numbers when they ask about balance, coins, spins, level or tier. NEVER invent numbers; if state isn't given, say you'll check.
 Answer ONLY with minified JSON: {"reply":string,"category":string|null,"max":number|null,"min":number|null,"query":string|null}
 "reply" = your answer, max 35 words, playful. "category" = one category id if the user's request maps to one. "max"/"min" = SAR budget bounds if mentioned. "query" = 1-3 keywords to search the catalog if they want product suggestions, else null.`;
+
+  // Compact live-state line handed to the model with every prompt so
+  // even the AI path can speak accurate numbers.
+  const stateSummary = () => {
+    const lv = S.levelInfo(), ti = S.tierInfo();
+    return `[state: DopaCash SAR ${Math.round(S.s.cash)}, ${S.s.coins} coins, ${S.s.spins} spins, Level ${lv.level} ${S.levelTitle(lv.level)}, VIP ${ti.tier.name}, ${S.s.streak.count}-day streak, ${S.activeOrders().length} active orders, ${S.s.orders.length} total orders]`;
+  };
 
   const initAI = async () => {
     if (aiChecked) return;
@@ -200,13 +208,13 @@ Answer ONLY with minified JSON: {"reply":string,"category":string|null,"max":num
       aiSession = await LM.create({ initialPrompts: [{ role: "system", content: AI_SYSTEM }] });
       aiMode = true;
       const badge = document.getElementById("bot-mode");
-      if (badge) badge.textContent = "on-device AI · Gemini Nano";
+      if (badge) badge.textContent = "DopaBrain™ + on-device AI (Gemini Nano)";
     } catch (_) { /* no AI in this browser — DopaBrain handles it */ }
   };
 
   const askAI = async (text) => {
     const raw = await Promise.race([
-      aiSession.prompt(text),
+      aiSession.prompt(stateSummary() + "\n" + text),
       new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 9000)),
     ]);
     const parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
@@ -286,40 +294,77 @@ Answer ONLY with minified JSON: {"reply":string,"category":string|null,"max":num
     return "";
   };
 
-  /* The local brain: parse intent → { texts:[..], html? } */
-  const brainThink = (raw) => {
+  /* Deterministic answers for questions about the user's own state.
+     Always runs BEFORE any AI so balance/orders/level are correct on
+     every browser — including Safari, where no on-device model exists.
+     Returns a reply object, or null to fall through to shopping. */
+  const stateAnswer = (raw) => {
     const t = raw.toLowerCase().trim();
 
-    if (/^(hi|hii+|hello|hey|yo|sup|salam|hala|marhaba)\b/.test(t) || t === "👋") {
+    if (/^(hi+|hello+|hey+|yo|sup|wassup|salam|hala|marhaba|good (morning|evening))\b/.test(t) || t === "👋") {
       return { texts: [rand([
         "Hey hey! Tell me a vibe, a budget, or a craving — I'll fetch the goods. 🛍️",
         "Welcome back to the fake-money paradise. What are we hunting today?",
         "Hala! Say something like “gaming under 500” and watch me work.",
       ])] };
     }
-    if (/thank|thx|shukran/.test(t)) {
+    if (/\b(thanks|thank you|thx|shukran|ty|appreciate)\b/.test(t)) {
       return { texts: [rand(["Anytime. My salary is your serotonin. 🤖", "You're welcome — leave 5 stars for the imaginary service!", "Shukran to YOU for shopping fictionally responsibly."])] };
     }
-    if (/\b(order|delivery|courier|driver|track|package|shipment)\b/.test(t)) {
-      const o = S.s.orders[0];
-      if (!o) return { texts: ["No orders yet! Place one and I'll happily narrate the fake courier's journey. 🛵"] };
+
+    // Order / delivery status — needs a status word, so "order pizza" still shops.
+    if ((/\b(order|orders|delivery|deliveries|package|courier|driver)\b/.test(t) && /\b(my|where|track|status|eta|when|arriv|coming|latest|last)\b/.test(t))
+        || /^(orders?|deliveries|track( my)?( order)?)\b/.test(t)) {
+      const orders = S.s.orders;
+      if (!orders.length) return { texts: ["No orders yet! Place one and I'll happily narrate the fake courier's journey. 🛵"] };
+      const active = S.activeOrders();
+      const o = orders[0];
       const prog = S.orderProgress(o);
+      const tail = active.length > 1 ? ` (+${active.length - 1} more in flight)` : "";
       return prog.pct >= 1
         ? { texts: [`Your latest order ${o.num} was delivered ${U.timeAgo(o.createdAt + o.duration)}. ${o.unboxed ? "Already unboxed — nice." : "Psst — it's still waiting to be unboxed! 🎁"}`],
             html: `<button class="btn btn-glass btn-block" data-action="track-order" data-id="${o.id}">📦 View ${o.num}</button>` }
-        : { texts: [`${o.num} is ${prog.stage.label.toLowerCase()} — ${o.driver.name} is on it, ETA ${U.fmtMins(prog.remaining)} min. The suspense is fictional but real. ⏱`],
+        : { texts: [`${o.num} is ${prog.stage.label.toLowerCase()} — ${o.driver.name} is on it, ETA ${U.fmtMins(prog.remaining)} min${tail}. The suspense is fictional but real. ⏱`],
             html: `<button class="btn btn-primary btn-block" data-action="track-order" data-id="${o.id}">🛵 Track live</button>` };
     }
-    if (/\b(balance|money|cash|coins?|wallet|broke|afford|rich)\b/.test(t) && !/\bunder|over|less|more\b/.test(t)) {
-      const lv = S.levelInfo();
-      return { texts: [`You're sitting on ${U.money(S.s.cash)} DopaCash, ${S.s.coins.toLocaleString()} coins, and ${S.s.spins} spin${S.s.spins === 1 ? "" : "s"} — Level ${lv.level} ${S.levelTitle(lv.level)}. ${S.s.cash > 10000 ? "Rich in ways that don't matter. Love it." : "The wheel in Rewards fixes empty pockets. 🎡"}`] };
+
+    // Wallet / level / tier / spins / streak — the real numbers, live.
+    if ((/\b(balance|money|cash|coins?|wallet|broke|rich|net ?worth|dopacash|how much (do|have) i)\b/.test(t)
+         || /\b(what|whats?|which|how)\b.{0,14}\b(level|tier|rank|streak|balance|xp)\b/.test(t)
+         || /\bhow many (coins?|spins?|points?)\b/.test(t)
+         || /\bmy (level|tier|xp|streak|spins?|rank|stats?)\b/.test(t)
+         || /\bam i (rich|broke)\b/.test(t))
+        && !/\b(under|over|less than|more than|below|above|cheaper|budget)\b/.test(t)) {
+      const lv = S.levelInfo(), ti = S.tierInfo();
+      const flavor = S.s.cash > 10000 ? "Rich in ways that don't matter. Love it. 😎"
+        : S.s.cash > 1000 ? "Comfortably fictional. Spend wisely (don't)."
+        : "Running low — the wheel in Rewards tops you up. 🎡";
+      return { texts: [`Here's your fictional net worth 💰\n${U.money(S.s.cash)} DopaCash · ${S.s.coins.toLocaleString()} coins · ${S.s.spins} spin${S.s.spins === 1 ? "" : "s"}\nLevel ${lv.level} ${S.levelTitle(lv.level)} · VIP ${ti.tier.emoji} ${ti.tier.name} · ${S.s.streak.count}-day streak 🔥\n${flavor}`],
+        html: `<button class="btn btn-glass btn-block" data-action="nav" data-route="rewards">🎁 Open Rewards</button>` };
     }
-    if (/what is (this|dopa\s?cart)|about (this|the) app|is this real|real money/.test(t)) {
+
+    // What have I bought / collection.
+    if (/\b(bought|owned?|purchased|my (haul|stuff|items|collection|orders history))\b/.test(t)) {
+      const owned = new Set();
+      S.s.orders.forEach((o) => { if (!o.returned) o.items.forEach((it) => owned.add(D.splitKey(it.key || it.id).id)); });
+      return owned.size
+        ? { texts: [`You've collected ${owned.size} of ${D.PRODUCTS.length} products across ${S.s.stats.orders} order${S.s.stats.orders === 1 ? "" : "s"}. Completionist arc loading… 🗃️`],
+            html: `<button class="btn btn-glass btn-block" data-action="nav" data-route="collection">🗃️ Open Collection</button>` }
+        : { texts: ["Your collection is gloriously empty. Let's fix that — name a category and I'll get you started. 🛍️"] };
+    }
+
+    if (/what is (this|dopa\s?cart)|about (this|the) app|is this real|real money|are you (real|an? ai)/.test(t)) {
       return { texts: ["DopaCart is a 100% fictional shopping app — fake money, fake products, fake couriers, real dopamine. You \"spend\" DopaCash, track imaginary deliveries, level up, and unlock rewards. Nothing here is real, especially me. 🤖"] };
     }
-    if (/\b(help|what can you|how do|what do you)\b/.test(t)) {
+    if (/\b(help|what can you|how do|what do you|commands?|options)\b/.test(t)) {
       return { texts: ["I speak fluent shopping: try “curly hair stuff”, “gaming under 500”, “surprise me”, “where's my order”, or “what's my balance”. Budget + category = my love language."] };
     }
+    return null;
+  };
+
+  /* Shopping brain: turns a request into real catalog picks. */
+  const productThink = (raw) => {
+    const t = raw.toLowerCase().trim();
 
     // Shopping intent — update context from this message.
     const cat = detectCat(t);
@@ -405,7 +450,18 @@ Answer ONLY with minified JSON: {"reply":string,"category":string|null,"max":num
     convo.push({ who: "me", text });
     pushTyping();
 
-    const thinkMs = 500 + Math.random() * 600;
+    const thinkMs = 450 + Math.random() * 500;
+
+    // Questions about the user's own wallet/orders/level are answered
+    // locally and deterministically — always correct, and identical on
+    // Chrome and Safari. This is why "what's my balance" now works even
+    // when the on-device model is (or isn't) available.
+    const local = stateAnswer(text);
+    if (local) {
+      setTimeout(() => { botReply(local); busy = false; }, thinkMs);
+      return;
+    }
+
     if (aiMode && aiSession) {
       try {
         const a = await askAI(text);
@@ -425,7 +481,7 @@ Answer ONLY with minified JSON: {"reply":string,"category":string|null,"max":num
       } catch (_) { /* model hiccup → DopaBrain takes the wheel */ }
     }
     setTimeout(() => {
-      botReply(brainThink(text));
+      botReply(productThink(text));
       busy = false;
     }, thinkMs);
   };
@@ -449,7 +505,7 @@ Answer ONLY with minified JSON: {"reply":string,"category":string|null,"max":num
       <button class="icon-btn" data-action="back" aria-label="Back">←</button>
       <div style="flex:1">
         <div class="page-title">🤖 DopaBot</div>
-        <div class="page-sub" id="bot-mode">${aiMode ? "on-device AI · Gemini Nano" : "DopaBrain™ · runs entirely on your device"}</div>
+        <div class="page-sub" id="bot-mode">${aiMode ? "DopaBrain™ + on-device AI (Gemini Nano)" : "DopaBrain™ · smart & fully on-device"}</div>
       </div>
     </div>
 

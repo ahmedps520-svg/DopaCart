@@ -1143,6 +1143,7 @@
   border: 1px solid var(--border);
   font-size: 14px;
   line-height: 1.45;
+  white-space: pre-line;
 }
 .bot-msg.me .bot-bubble {
   border-radius: 18px 18px 5px 18px;
