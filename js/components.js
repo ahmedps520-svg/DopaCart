@@ -137,14 +137,17 @@ DC.ui = (() => {
   };
 
   // kind: "sheet" (bottom) or "dialog" (centered)
-  const modal = (html, kind = "sheet", dismissable = true) => {
+  // onDismiss fires when the user closes via the backdrop — reward
+  // dialogs pass a re-render here so tapping outside never leaves
+  // stale UI (e.g. a spin button stuck on "Spinning…").
+  const modal = (html, kind = "sheet", dismissable = true, onDismiss = null) => {
     const bd = document.createElement("div");
     bd.className = "modal-backdrop" + (kind === "dialog" ? " center" : "");
     bd.innerHTML = kind === "dialog"
       ? `<div class="dialog">${html}</div>`
       : `<div class="sheet"><div class="sheet-grab"></div>${html}</div>`;
     if (dismissable) {
-      bd.addEventListener("click", (e) => { if (e.target === bd) closeModal(); });
+      bd.addEventListener("click", (e) => { if (e.target === bd) { closeModal(); onDismiss?.(); } });
     }
     modalRoot().innerHTML = "";
     modalRoot().appendChild(bd);

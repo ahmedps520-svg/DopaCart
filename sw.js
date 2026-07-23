@@ -8,7 +8,7 @@
 
 // Version only names the cache generation; updates no longer depend
 // on bumping it (network-first serves fresh files regardless).
-const CACHE = "dopacart-v1.6.0";
+const CACHE = "dopacart-v1.6.2";
 
 const ASSETS = [
   "./",
@@ -36,10 +36,14 @@ const ASSETS = [
   "./icons/icon-180.png",
 ];
 
-/* Install: precache everything, activate immediately. */
+/* Install: precache everything, activate immediately.
+   cache:"no-cache" forces revalidation with the server so the precache
+   can never be filled from a stale browser HTTP cache. */
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then((cache) => cache.addAll(ASSETS.map((u) => new Request(u, { cache: "no-cache" }))))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -54,7 +58,13 @@ self.addEventListener("activate", (event) => {
 
 /* Fetch: network-first for same-origin. Fresh files always win; every
    successful response refreshes the offline copy; the cache only
-   answers when the network is unreachable. */
+   answers when the network is unreachable.
+
+   Crucially, cache:"no-cache" makes the network request REVALIDATE with
+   the server instead of trusting the browser's HTTP cache — without it,
+   hosts that send cache headers (e.g. GitHub Pages, ~10 min) can serve
+   stale files and "network-first" quietly stops meaning fresh. A 304
+   answer keeps this as fast as a cache hit. */
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
@@ -62,8 +72,14 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== location.origin) return;   // external images bypass the SW
 
+  // Navigation requests can't be re-wrapped in new Request() — refetch
+  // by URL instead (same-origin GET, so nothing meaningful is lost).
+  const freshFetch = request.mode === "navigate"
+    ? fetch(request.url, { cache: "no-cache", credentials: "same-origin" })
+    : fetch(new Request(request, { cache: "no-cache" }));
+
   event.respondWith(
-    fetch(request)
+    freshFetch
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();

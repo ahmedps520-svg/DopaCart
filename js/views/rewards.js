@@ -11,14 +11,14 @@ DC.views.rewards = (() => {
 
   /* ── Spin wheel config ──────────────────────────────────── */
   const SEGMENTS = [
-    { label: "SAR 400", emoji: "💵", color: "#c0392b", weight: 18, apply: () => { S.earnCash(400); return "+SAR 400 DopaCash"; } },
-    { label: "25🪙", emoji: "🪙", color: "#8e44ad", weight: 16, apply: () => { S.earnCoins(25); return "+25 coins"; } },
-    { label: "100XP", emoji: "⭐", color: "#2980b9", weight: 15, apply: () => { S.addXP(100); return "+100 XP"; } },
-    { label: "25%", emoji: "🏷️", color: "#16a085", weight: 12, apply: () => "Coupon LUCKY25 — use it at checkout!" },
-    { label: "SAR 2,000", emoji: "💰", color: "#f39c12", weight: 4, apply: () => { S.earnCash(2000); return "JACKPOT! +SAR 2,000 DopaCash"; } },
-    { label: "+1🎡", emoji: "🎡", color: "#d35400", weight: 10, apply: () => { S.s.spins += 1; S.save(); return "+1 extra spin"; } },
-    { label: "50🪙", emoji: "🪙", color: "#27ae60", weight: 14, apply: () => { S.earnCoins(50); return "+50 coins"; } },
-    { label: "40XP", emoji: "✨", color: "#7f8c8d", weight: 11, apply: () => { S.addXP(40); return "+40 XP"; } },
+    { label: "SAR 800", emoji: "💵", color: "#c0392b", weight: 17, apply: () => { S.earnCash(800); return "+SAR 800 DopaCash"; } },
+    { label: "75🪙", emoji: "🪙", color: "#8e44ad", weight: 15, apply: () => { S.earnCoins(75); return "+75 coins"; } },
+    { label: "250XP", emoji: "⭐", color: "#2980b9", weight: 13, apply: () => { S.addXP(250); return "+250 XP"; } },
+    { label: "30%", emoji: "🏷️", color: "#16a085", weight: 10, apply: () => "Coupon VIP30 — 30% off at checkout!" },
+    { label: "SAR 5,000", emoji: "💰", color: "#f39c12", weight: 4, apply: () => { S.earnCash(5000); return "JACKPOT! +SAR 5,000 DopaCash"; } },
+    { label: "+2🎡", emoji: "🎡", color: "#d35400", weight: 9, apply: () => { S.s.spins += 2; S.save(); return "+2 extra spins"; } },
+    { label: "150🪙", emoji: "🪙", color: "#27ae60", weight: 12, apply: () => { S.earnCoins(150); return "+150 coins"; } },
+    { label: "📦", emoji: "📦", color: "#7f8c8d", weight: 8, apply: () => { S.s.boxReadyAt = Date.now(); S.save(); return "Mystery Box recharged — it's ready to open right now!"; } },
   ];
   const SEG_ANGLE = 360 / SEGMENTS.length;
   let spinning = false;
@@ -177,15 +177,22 @@ DC.views.rewards = (() => {
     document.getElementById("skip-spin-btn")?.setAttribute("hidden", "");
     const seg = SEGMENTS[idx];
     const msg = seg.apply();
+    // Reset the button here too — the modal's Collect re-render isn't
+    // guaranteed (the user can dismiss by tapping the backdrop).
+    const sb = document.getElementById("spin-btn");
+    if (sb) {
+      sb.disabled = S.s.spins <= 0;
+      sb.textContent = S.s.spins > 0 ? `Spin (${S.s.spins} left)` : "No spins left";
+    }
     U.haptic([30, 40, 30]);
     DC.sound.play("sparkle");          // win sound, distinct from the box
     U.confetti({ count: 90 });
     UI.modal(`
       <div class="reward-burst">${seg.emoji}</div>
-      <div class="reward-amount">${seg.label}</div>
+      <div class="reward-amount">${seg.label === "📦" ? "Mystery Box!" : seg.label}</div>
       <p class="muted" style="font-size:13.5px;margin-bottom:16px">${msg}</p>
       <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Collect</button>
-    `, "dialog");
+    `, "dialog", true, () => DC.app.render());
   };
 
   const spin = () => {
@@ -271,7 +278,7 @@ DC.views.rewards = (() => {
         <div class="reward-amount">${got.t}</div>
         <p class="tiny muted" style="margin-bottom:16px">Next box unlocks in 4 hours.</p>
         <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Nice!</button>
-      `, "dialog");
+      `, "dialog", true, () => DC.app.render());
     }, 750);
   };
 

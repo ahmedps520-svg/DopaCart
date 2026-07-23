@@ -76,6 +76,9 @@ DC.views.settings = (() => {
         <span class="s-e">📋</span><span class="s-t">Changelog</span>
         <span class="s-v">v${D.VERSION}</span><span class="s-arrow">›</span>
       </button>
+      <button class="set-row" data-action="check-updates">
+        <span class="s-e">🔄</span><span class="s-t">Check for Updates</span><span class="s-arrow">›</span>
+      </button>
       <button class="set-row" data-action="show-privacy">
         <span class="s-e">🔒</span><span class="s-t">Privacy</span><span class="s-arrow">›</span>
       </button>
@@ -339,6 +342,33 @@ DC.views.settings = (() => {
     U.toast("Fresh start", "All data cleared. Welcome back, stranger.", "🌱");
   };
 
+  /* ── Manual update check ────────────────────────────────── */
+  // Asks the browser to re-fetch sw.js right now. If a new version is
+  // waiting, the existing controllerchange handler reloads the app
+  // automatically (with the "App updated!" toast).
+  const checkUpdates = async () => {
+    if (!("serviceWorker" in navigator) || location.protocol === "file:") {
+      U.toast("Not available here", "Updates need the app served over http(s)", "🔄");
+      return;
+    }
+    U.toast("Checking for updates…", "", "🔄", 1500);
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      await reg?.update();
+      // Give a fresh worker a moment to start installing, then report.
+      // (If one installed, the controllerchange handler reloads anyway.)
+      setTimeout(() => {
+        if (reg?.installing || reg?.waiting) {
+          U.toast("Update found!", "Installing — the app will refresh itself", "🚀");
+        } else {
+          U.toast("You're up to date", "DopaCart v" + D.VERSION + " ✨", "✅");
+        }
+      }, 1600);
+    } catch (_) {
+      U.toast("Couldn't check", "Are you offline? Fresh files need a connection", "📡");
+    }
+  };
+
   /* ── Notifications permission ───────────────────────────── */
   const enableNotifs = async () => {
     if (!("Notification" in window)) {
@@ -365,6 +395,6 @@ DC.views.settings = (() => {
     html, setTheme, buyTheme,
     showAbout, showChangelog, showPrivacy, showCredits,
     showReturns, doReturn, confirmReturn, showComplaint, submitComplaint,
-    exportData, importData, clearData, confirmClear, enableNotifs,
+    exportData, importData, clearData, confirmClear, enableNotifs, checkUpdates,
   };
 })();

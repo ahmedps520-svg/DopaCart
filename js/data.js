@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.6.0";
+  const VERSION = "1.6.2";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -438,6 +438,8 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.6.2", notes: ["Service worker now revalidates with the server on every fetch — the browser's HTTP cache can never serve stale app files again (fixes stuck old versions on hosts like GitHub Pages)", "New in Settings: Check for Updates — fetches the latest version on demand"] },
+    { v: "1.6.1", notes: ["Lucky Spin pays way better: SAR 800 base cash, SAR 5,000 jackpot, up to 150 coins, 250 XP, +2 spins, a 30% coupon — and a new segment that instantly recharges your Mystery Box", "Fixed: skipping a spin and tapping outside the reward dialog left the button stuck on \"Spinning…\"", "Reward dialogs now refresh the screen however you close them"] },
     { v: "1.6.0", notes: ["Daily Quests — 3 rotating goals a day, auto-paying coins & XP (+ bonus spin for the sweep)", "VIP tiers Bronze → Diamond — lifetime spending boosts your cashback up to 20%", "Write your own product reviews (first review per product pays 30 coins)", "Unbox delivered orders for surprise coins & XP", "Frequently Bought Together bundles on every product", "Your Wrapped — a stats page of your fictional shopping year", "Collection gallery — every product you've ever owned, Pokédex style", "DopaBot personal shopper — chat your way to curated picks", "Gift a cart — share a code, import a cart", "DopaFriday — bigger flash sales + 2× XP every Friday", "Price-drop alerts for favorites & cart reminders (code COMEBACK15)"] },
     { v: "1.5.0", notes: ["Color options for Apple products — real colorways per model", "Support section in Settings: Returns & Refunds (full DopaCash back on delivered orders)", "File a Complaint — fictional tickets, real coin compensation (once daily)"] },
     { v: "1.4.1", notes: ["Fixed monitor photo mismatch — now Alienware 27 (matching its picture)", "Added Apple Studio Display with its official image"] },

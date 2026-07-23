@@ -119,7 +119,7 @@ DC.app = (() => {
         <div class="reward-amount" style="font-size:22px">${S.levelTitle(level)}</div>
         <p class="tiny muted" style="margin-bottom:16px">+SAR ${400 * level} · +${25 * level} coins · +1 spin 🎡</p>
         <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Let's go</button>
-      `, "dialog");
+      `, "dialog", true, () => DC.app.render());
     };
     attempt(12);
   };
@@ -137,7 +137,7 @@ DC.app = (() => {
       <div class="reward-amount">+SAR ${r.cash.toLocaleString()}</div>
       <p class="muted" style="font-size:13.5px;margin-bottom:16px">+${r.coins} coins · +50 XP<br>Streak bonus grows every day.</p>
       <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Claim 🎉</button>
-    `, "dialog");
+    `, "dialog", true, () => DC.app.render());
     S.pushNotif("🎁", "Daily reward claimed", `Day ${r.streak} — SAR ${r.cash} + ${r.coins} coins`, true);
   };
 
@@ -176,7 +176,7 @@ DC.app = (() => {
       <div class="reward-amount">+${r.coins} coins 🪙</div>
       <p class="muted" style="font-size:13.5px;margin-bottom:16px">+${r.xp} XP · The packing peanuts were fictional but the joy is real.</p>
       <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Love it</button>
-    `, "dialog");
+    `, "dialog", true, () => DC.app.render());
   };
 
   const openFlashSheet = () => {
@@ -296,6 +296,7 @@ DC.app = (() => {
       U.haptic(6);
     },
     "submit-complaint": () => DC.views.settings.submitComplaint(),
+    "check-updates": () => DC.views.settings.checkUpdates(),
     "show-about": () => DC.views.settings.showAbout(),
     "show-changelog": () => DC.views.settings.showChangelog(),
     "show-privacy": () => DC.views.settings.showPrivacy(),
