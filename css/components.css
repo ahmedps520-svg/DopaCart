@@ -1189,11 +1189,21 @@
   box-shadow: var(--shadow-accent);
   display: grid;
   place-items: center;
-  cursor: pointer;
+  cursor: grab;
   z-index: 70;
+  touch-action: none;      /* let pointermove drag on touch screens */
+  user-select: none;
+  -webkit-user-select: none;
   transition: top 2.8s ease-in-out, left 2.8s ease-in-out, right 2.8s ease-in-out,
     transform 0.25s var(--ease-spring), opacity 0.25s;
 }
+#dopabot-fab.dragging {
+  cursor: grabbing;
+  transform: scale(1.18);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5), var(--shadow-accent);
+}
+#dopabot-fab.dragging::before { animation: none; opacity: 0; }
+#dopabot-fab.dragging .fab-face { animation-play-state: paused; }
 #dopabot-fab::before {
   content: "";
   position: absolute;
@@ -1216,7 +1226,7 @@
   0%, 100% { transform: translateY(0) rotate(-4deg); }
   50% { transform: translateY(-4px) rotate(5deg); }
 }
-#dopabot-fab:active { transform: scale(0.88); }
+#dopabot-fab:active:not(.dragging) { transform: scale(0.88); }
 #dopabot-fab.gone { transform: scale(0); opacity: 0; pointer-events: none; }
 #dopabot-fab .fab-say {
   position: absolute;

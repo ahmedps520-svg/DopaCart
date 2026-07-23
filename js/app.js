@@ -436,31 +436,133 @@ DC.app = (() => {
 
   /* ── DopaBot floating companion ─────────────────────────── */
   // A little animated circle that drifts along the screen edges and
-  // opens the shopper chat when tapped. Roaming is done by tweening
-  // `top`/`left` between random anchor points; the constant bobbing
-  // lives in CSS on the inner span so the two never fight.
+  // opens the shopper chat when tapped. It's also draggable: grab it,
+  // drop it anywhere, and it spring-snaps to the nearest edge and
+  // remembers the spot (s.fabPos) — auto-roaming stops for good once
+  // the user has placed it themselves. The constant bobbing lives in
+  // CSS on the inner span so it never fights the positioning.
   const initBotFab = () => {
     const fab = document.createElement("button");
     fab.id = "dopabot-fab";
     fab.setAttribute("aria-label", "Chat with DopaBot");
     fab.innerHTML = `<span class="fab-face">🤖</span><span class="fab-say" hidden></span>`;
-    fab.addEventListener("click", () => { U.haptic(10); DC.sound.play("pluck"); go("shopper"); });
     document.body.appendChild(fab);
 
     const face = fab.querySelector(".fab-face");
     const say = fab.querySelector(".fab-say");
+    const SIZE = 54, EDGE = 14;
+    const topMin = () => 70;                                  // clear of headers
+    const topMax = () => innerHeight - SIZE - 90;             // clear of tab bar
 
-    // Drift to a new spot every few seconds (right edge mostly,
-    // occasional trip to the left, always clear of the tab bar).
-    const roam = () => {
-      const left = Math.random() < 0.22;
-      fab.classList.toggle("on-left", left);
-      fab.style.left = left ? "14px" : "auto";
-      fab.style.right = left ? "auto" : "14px";
-      fab.style.top = (16 + Math.random() * 48) + "vh";
+    // All positioning is left/top in px (left↔auto can't animate).
+    const place = (x, y) => {
+      fab.style.right = "auto";
+      fab.style.left = x + "px";
+      fab.style.top = y + "px";
     };
-    roam();
-    setInterval(roam, 7000);
+    const sideX = (side) => (side === "left" ? EDGE : innerWidth - SIZE - EDGE);
+
+    // Transition modes: "" = stylesheet roam glide (2.8s),
+    // "snap" = quick spring to an edge, "none" = follow the finger.
+    const setTransition = (mode) => {
+      fab.style.transition =
+        mode === "none" ? "none"
+        : mode === "snap" ? "top 0.45s var(--ease-spring), left 0.45s var(--ease-spring), transform 0.25s var(--ease-spring)"
+        : "";
+    };
+
+    const applySide = (side) => fab.classList.toggle("on-left", side === "left");
+
+    // Restore a user-chosen spot, or start the wander. The position
+    // lives under its own key (NOT inside the main save blob): other
+    // open tabs rewrite the whole save constantly, which would clobber
+    // it — and a screen position is a device preference, not game data.
+    const POS_KEY = "dopacart-fab";
+    const loadPos = () => { try { return JSON.parse(localStorage.getItem(POS_KEY)); } catch (_) { return null; } };
+    const savePos = (p) => { try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch (_) {} };
+    let roamTimer = null;
+    const saved = loadPos();
+    if (saved?.side) {
+      applySide(saved.side);
+      setTransition("none");                                  // appear exactly where the user left him
+      place(sideX(saved.side), U.clamp(saved.topFrac * innerHeight, topMin(), topMax()));
+      requestAnimationFrame(() => setTransition(""));
+    } else {
+      const roam = () => {
+        const left = Math.random() < 0.22;
+        applySide(left);
+        place(sideX(left ? "left" : "right"), U.clamp((0.16 + Math.random() * 0.48) * innerHeight, topMin(), topMax()));
+      };
+      setTransition("none"); roam();                          // appear in place…
+      requestAnimationFrame(() => setTransition(""));         // …then glide from there on
+      roamTimer = setInterval(roam, 7000);
+    }
+
+    /* Drag & drop (pointer events cover touch + mouse). */
+    let dragging = false, moved = false, suppressClick = false;
+    let offX = 0, offY = 0;
+
+    fab.addEventListener("pointerdown", (e) => {
+      dragging = true; moved = false;
+      const r = fab.getBoundingClientRect();
+      offX = e.clientX - r.left;
+      offY = e.clientY - r.top;
+      try { fab.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    fab.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const r = fab.getBoundingClientRect();
+      const dx = e.clientX - (r.left + offX), dy = e.clientY - (r.top + offY);
+      if (!moved && Math.hypot(dx, dy) < 6) return;           // still a tap
+      if (!moved) {
+        moved = true;
+        setTransition("none");
+        fab.classList.add("dragging");
+        U.haptic(8);
+        if (roamTimer) { clearInterval(roamTimer); roamTimer = null; }
+      }
+      place(
+        U.clamp(e.clientX - offX, 4, innerWidth - SIZE - 4),
+        U.clamp(e.clientY - offY, topMin(), topMax())
+      );
+    });
+
+    const endDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      fab.classList.remove("dragging");
+      if (!moved) return;                                     // plain tap → click fires
+      suppressClick = true;
+      // Spring-snap to the nearest edge and remember the spot.
+      const r = fab.getBoundingClientRect();
+      const side = r.left + r.width / 2 < innerWidth / 2 ? "left" : "right";
+      const y = U.clamp(r.top, topMin(), topMax());
+      setTransition("snap");
+      applySide(side);
+      place(sideX(side), y);
+      U.haptic([8, 20]);
+      DC.sound.play("pop");
+      savePos({ side, topFrac: y / innerHeight });
+    };
+    fab.addEventListener("pointerup", endDrag);
+    fab.addEventListener("pointercancel", endDrag);
+
+    fab.addEventListener("click", () => {
+      if (suppressClick) { suppressClick = false; return; }
+      U.haptic(10);
+      DC.sound.play("pluck");
+      go("shopper");
+    });
+
+    // Keep the bot on-screen when the window resizes/rotates.
+    window.addEventListener("resize", () => {
+      const pos = loadPos();
+      if (!pos?.side) return;
+      setTransition("none");
+      place(sideX(pos.side), U.clamp(pos.topFrac * innerHeight, topMin(), topMax()));
+      requestAnimationFrame(() => setTransition(""));
+    });
 
     // Occasional emotes + speech bubbles (never while chatting).
     const FACES = ["🤖", "🤖", "🤖", "🧐", "😏", "🫡", "🤑"];

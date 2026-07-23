@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.7.2";
+  const VERSION = "1.7.3";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -443,6 +443,7 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.7.3", notes: ["DopaBot's bubble is now draggable — grab him, drop him anywhere, and he spring-snaps to the nearest edge with a satisfying pop", "He remembers where you put him (even after closing the app) and stops auto-wandering once you've placed him", "Grows under your finger while dragging, stays clear of the tab bar, and survives screen rotation"] },
     { v: "1.7.2", notes: ["Fixed: DopaBot now knows your real balance, coins, spins, level, VIP tier, streak and orders — answered straight from your save, always accurate", "These answers now work identically on every browser, so iPhone/Safari home-screen users get the same smart assistant (the extra on-device AI boost is Chrome-only, but DopaBrain runs everywhere)", "DopaBot can also open Rewards, Collection or your live order from chat"] },
     { v: "1.7.1", notes: ["Real photos for the 11 products that were emoji-only: SteelSeries mousepad, Anker charger, Fitbit Charge 6, Chemex, Baseus car vacuum, Little Trees, iOttie mount, WeatherTech liners, Michelin inflator, Turtle Wax, Amazon Basics organizer", "Fixed the Govee LED Strip 5m photo — now actually shows LED strip lighting", "Every product in the catalog now has an image"] },
     { v: "1.7.0", notes: ["DopaBot is now a real conversation — type anything: \"gaming under 500\", \"curly hair routine\", \"where's my order\", \"surprise me\"…", "Uses Chrome's built-in on-device AI (Gemini Nano) when your browser has it; otherwise the new DopaBrain™ intent engine — either way, everything stays on your device", "Product picks always come from the real catalog, never made up", "DopaBot now floats around the app as an animated bubble — drifts, bobs, emotes, and occasionally whispers about deals. Tap him to chat"] },
