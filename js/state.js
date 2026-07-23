@@ -61,8 +61,16 @@ DC.store = (() => {
 
   const LEVEL_TITLES = ["Window Shopper", "Cart Curious", "Deal Hunter", "Serial Scroller",
     "Checkout Champ", "Flash Sale Fiend", "Cart Goblin", "Dopamine Dealer",
-    "Legendary Spender", "The Final Boss of Shopping"];
-  const levelTitle = (lv) => LEVEL_TITLES[Math.min(lv - 1, LEVEL_TITLES.length - 1)];
+    "Legendary Spender", "The Final Boss of Shopping",
+    // Progression past the old cap — the level number keeps meaning something.
+    "Impulse Overlord", "Warehouse Whisperer", "Coupon Sorcerer", "Retail Royalty",
+    "Checkout Deity", "Prime Ascendant", "Cosmic Consumer", "Void Bargainer",
+    "Ascended Add-to-Carter", "The Shopping Singularity"];
+  // Beyond the last title, add prestige stars so it never flat-lines.
+  const levelTitle = (lv) => {
+    if (lv <= LEVEL_TITLES.length) return LEVEL_TITLES[lv - 1];
+    return LEVEL_TITLES[LEVEL_TITLES.length - 1] + " ★" + (lv - LEVEL_TITLES.length);
+  };
 
   /* ── Themes ─────────────────────────────────────────────── */
   const THEMES = [
@@ -293,13 +301,17 @@ DC.store = (() => {
 
     s.cash -= totals.total;
     const h = U.hash(U.uid());
+    // Bigger hauls take the fictional courier longer: base + per-unit,
+    // with jitter, capped at 15 min so it never gets silly.
+    const units = items.reduce((a, it) => a + it.qty, 0);
+    const duration = Math.min(90 + units * 22 + Math.random() * 45, 900) * 1000;
     const order = {
       id: U.uid(),
       num: "DC-" + String(10000 + (h % 90000)),
       items: items.map((it) => ({ key: it.key, qty: it.qty, price: it.unit })),
       totals: { ...totals },
       createdAt: Date.now(),
-      duration: (120 + Math.random() * 150) * 1000,      // 2–4.5 real minutes
+      duration,                                          // ~1.9 min (1 item) → 15 min (many)
       driver: DC.data.DRIVERS[h % DC.data.DRIVERS.length],
       driverRating: (44 + (h % 6)) / 10,
       address: ADDRESSES[h % ADDRESSES.length],
@@ -480,6 +492,9 @@ DC.store = (() => {
     { id: "gold", name: "Gold", emoji: "🥇", at: 75000, cashback: 14, spinMult: 1.5, coupon: "ROYAL40" },
     { id: "platinum", name: "Platinum", emoji: "💠", at: 150000, cashback: 16, spinMult: 1.75, coupon: "MYTHIC45" },
     { id: "diamond", name: "Diamond", emoji: "💎", at: 300000, cashback: 20, spinMult: 2, coupon: "LEGEND50" },
+    { id: "obsidian", name: "Obsidian", emoji: "⬛", at: 600000, cashback: 23, spinMult: 2.25, coupon: "OBSIDIAN55" },
+    { id: "cosmic", name: "Cosmic", emoji: "🌌", at: 1200000, cashback: 26, spinMult: 2.5, coupon: "COSMIC60" },
+    { id: "singularity", name: "Singularity", emoji: "🕳️", at: 2500000, cashback: 30, spinMult: 3, coupon: "SINGULARITY66" },
   ];
 
   const tierInfo = (spent = s.stats.spent) => {
@@ -539,7 +554,24 @@ DC.store = (() => {
     { id: "spin-master", emoji: "🎡", name: "Spin Master", test: () => s.stats.spinsDone >= 5 },
     { id: "unboxer", emoji: "🎁", name: "Unboxer", test: () => s.stats.boxes >= 3 },
     { id: "completionist", emoji: "👑", name: "Completionist", test: () => s.stats.cats.length >= 5 },
+    // Endgame badges — real goals again now that the catalog is bigger.
+    { id: "level-15", emoji: "🚀", name: "Level 15", test: () => levelInfo().level >= 15 },
+    { id: "level-25", emoji: "🌠", name: "Level 25", test: () => levelInfo().level >= 25 },
+    { id: "whale", emoji: "🐋", name: "Whale", test: () => s.stats.spent >= 150000 },
+    { id: "tycoon", emoji: "🏰", name: "Tycoon", test: () => s.stats.spent >= 600000 },
+    { id: "spin-tycoon", emoji: "🎰", name: "Spin Tycoon", test: () => s.stats.spinsDone >= 50 },
+    { id: "hoarder", emoji: "📦", name: "Hoarder", test: () => ownedCount() >= 60 },
+    { id: "all-categories", emoji: "🗺️", name: "Globetrotter", test: () => s.stats.cats.length >= DC.data.CATEGORIES.length },
+    { id: "gotta-buy-em-all", emoji: "🏆", name: "Gotta Buy 'Em All", test: () => ownedCount() >= DC.data.PRODUCTS.length },
   ];
+
+  // Unique products owned (delivered/kept, not returned) — for badges
+  // and the Collection. Cheap enough to recompute on demand.
+  const ownedCount = () => {
+    const set = new Set();
+    s.orders.forEach((o) => { if (!o.returned) o.items.forEach((it) => set.add(DC.data.splitKey(it.key || it.id).id)); });
+    return set.size;
+  };
 
   let achChecking = false;
   const checkAch = () => {

@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.7.4";
+  const VERSION = "1.8.0";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -89,6 +89,27 @@ DC.data = (() => {
       pal: [["#141b3d", "#5460d1"], ["#0f2e33", "#2ba3ad"], ["#2e1a10", "#c06a35"], ["#25102e", "#9a4ac0"]],
       subs: ["Paper", "Tools", "Carry", "Desk"],
       boiler: "Productivity not included but strongly implied. Pairs well with pretending to take notes.",
+    },
+    {
+      id: "pets", name: "Pets", emoji: "🐾", tagline: "Spoil the goodest boys & girls",
+      grad: ["#3a1e0a", "#e0872a"],
+      pal: [["#3a1e0a", "#d6822a"], ["#12283a", "#3d8fc9"], ["#152e18", "#48a85e"], ["#2b1230", "#a052c9"]],
+      subs: ["Dogs", "Cats", "Aquarium"],
+      boiler: "For companions who can't shop for themselves. Tails wag and purrs engage — fictionally.",
+    },
+    {
+      id: "toys", name: "Toys & Games", emoji: "🧸", tagline: "Play has no age limit",
+      grad: ["#2b0a3d", "#e0356b"],
+      pal: [["#31104f", "#7a2ce0"], ["#0e2a52", "#2f6bff"], ["#3d0f24", "#e0356b"], ["#332a0e", "#c9a12b"]],
+      subs: ["Building", "Board Games", "Plush", "RC", "Puzzles"],
+      boiler: "Serotonin in physical form. Batteries and imagination sold separately.",
+    },
+    {
+      id: "outdoors", name: "Outdoors", emoji: "🏕️", tagline: "The great fictional outdoors",
+      grad: ["#0d3320", "#2fbf71"],
+      pal: [["#0e341f", "#2cae66"], ["#0c2e3e", "#2b9fc9"], ["#332a0e", "#c9a12b"], ["#33110e", "#d05438"]],
+      subs: ["Camping", "Hiking", "Cooling", "Water"],
+      boiler: "Gear for adventures you'll mostly take on Instagram. Weatherproof, fiction-proof.",
     },
   ];
 
@@ -246,6 +267,30 @@ DC.data = (() => {
       ["Pomodoro Focus Timer", 99, "⏲️", "Desk", ["staff"], "Flip for 25 minutes of pure focus. Procrastination hates this one trick.", un("1501139083538-0139583c060f")],
       ["Moleskine Weekly Planner", 99, "📅", "Paper", [], "Weekly spreads, habit trackers, and one guilt-free skipped week.", un("1506784983877-45594efa4cbe")],
     ],
+    pets: [
+      ["Furbo 360° Dog Camera", 549, "📷", "Dogs", ["hot"], "Tosses treats and catches the zoomies on camera while you're away.", un("1608113240010-e76286118bf2")],
+      ["PetSafe Smart Feeder", 399, "🍽️", "Dogs", ["bestseller"], "Portions meals on schedule so the guilt-trip eyes finally lose their power.", un("1714068691210-073dc52c6c1d")],
+      ["KONG Classic Chew Toy", 45, "🦴", "Dogs", ["trending"], "Indestructible rubber that outlasts every 'this time for sure' toy.", un("1535294435445-d7249524ef2e")],
+      ["Deluxe Cat Tree Tower", 449, "🐈", "Cats", ["bestseller"], "A carpeted skyscraper for a landlord who pays rent exclusively in naps.", un("1601758065893-25c11bfa69b5")],
+      ["Self-Cleaning Litter Box", 1299, "🚽", "Cats", ["limited"], "Scoops itself so you never make eye contact with the task again.", un("1727510160238-3c17eb5e6120")],
+      ["Aqueon 20-Gallon Aquarium", 399, "🐠", "Aquarium", ["staff"], "A glass box of calm. Fish sold separately in the fictional pet aisle.", un("1711539137981-ddf32f60c77b")],
+    ],
+    toys: [
+      ["LEGO Icons Collector Set", 899, "🧱", "Building", ["bestseller", "hot"], "Thousands of bricks and a manual you'll pretend not to need.", un("1644175897056-50f4d3a9a827")],
+      ["Catan Board Game", 199, "🎲", "Board Games", ["trending"], "Trade wood for sheep, lose friends, demand a rematch. The cycle of life.", un("1547638375-ebf04735d792")],
+      ["Rubik's Speed Cube", 59, "🟥", "Puzzles", [], "Twelve moves from solved, forever. The desk fidget of champions.", un("1567646303972-f7de3a9c0a05")],
+      ["Giant Teddy Bear", 249, "🧸", "Plush", ["bestseller"], "Four feet of unconditional, fictional emotional support.", un("1602734846297-9299fc2d4703")],
+      ["RC Drift Racer 4WD", 349, "🏎️", "RC", ["hot"], "Grippy 4WD and a controller range that ends exactly one meter too soon.", un("1758964087156-0eac97044f84")],
+      ["1000-Piece Jigsaw Puzzle", 79, "🧩", "Puzzles", [], "A weekend, a folding table, and one piece that's definitely missing.", un("1591040092219-081fb773589c")],
+    ],
+    outdoors: [
+      ["4-Person Dome Tent", 599, "⛺", "Camping", ["bestseller"], "Sets up in minutes, survives the one storm you didn't plan for.", un("1631635589499-afd87d52bf64")],
+      ["Osprey 65L Trek Backpack", 799, "🎒", "Hiking", ["hot"], "Straps for days and pockets you'll keep discovering on day three.", un("1622260614927-208cfe3f5cfd")],
+      ["YETI Tundra Cooler", 899, "🧊", "Cooling", ["staff"], "Holds ice for a week and bears out for good measure.", un("1550720766-13563d26a25f")],
+      ["Hydro Flask 32oz", 149, "🚰", "Water", ["bestseller"], "Ice-cold for 24 hours. The unofficial trophy of staying hydrated.", un("1586277419671-f34cf56500a0")],
+      ["Coleman Camp Stove", 349, "🔥", "Camping", [], "Two burners between you and a very sad cold-sandwich dinner.", un("1529385232332-276282a2ce5c")],
+      ["Portable Camp Hammock", 129, "🌴", "Hiking", ["new"], "Two trees and thirty seconds from the best decision of the whole trip.", un("1526471873993-f236a150a764")],
+    ],
   };
 
   /* ── Build catalog with stable derived stats ────────────── */
@@ -382,6 +427,9 @@ DC.data = (() => {
     ROYAL40: { pct: 40, label: "40% off — Gold spin prize" },
     MYTHIC45: { pct: 45, label: "45% off — Platinum spin prize" },
     LEGEND50: { pct: 50, label: "50% off — Diamond spin prize" },
+    OBSIDIAN55: { pct: 55, label: "55% off — Obsidian spin prize" },
+    COSMIC60: { pct: 60, label: "60% off — Cosmic spin prize" },
+    SINGULARITY66: { pct: 66, label: "66% off — Singularity spin prize" },
   };
 
   /* ── Drivers (for fake deliveries) ──────────────────────── */
@@ -443,6 +491,7 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.8.0", notes: ["3 new categories — 🐾 Pets, 🧸 Toys & Games, 🏕️ Outdoors — 18 new products, all in the Collection", "Levels no longer stop at The Final Boss of Shopping — 10 new titles up to The Shopping Singularity, then prestige stars (★) forever", "3 new VIP tiers above Diamond: ⬛ Obsidian, 🌌 Cosmic, 🕳️ Singularity (up to 30% cashback, ×3 spin payouts, 66% spin coupon)", "8 new badges including Whale, Tycoon, Hoarder and Gotta Buy 'Em All", "Bigger orders now take the courier longer to deliver — a full cart can take up to 15 minutes"] },
     { v: "1.7.4", notes: ["Faster spins — the wheel now settles in 2.6s instead of 4.2s", "⚡ Spin all — burn every spin at once and get one combined haul summary (bonus spins you win stay for the next round)", "Buy max — top up as many spins as your coins allow in a single tap", "App now stays in portrait; turned sideways on a phone, it politely asks you to rotate back"] },
     { v: "1.7.3", notes: ["DopaBot's bubble is now draggable — grab him, drop him anywhere, and he spring-snaps to the nearest edge with a satisfying pop", "He remembers where you put him (even after closing the app) and stops auto-wandering once you've placed him", "Grows under your finger while dragging, stays clear of the tab bar, and survives screen rotation"] },
     { v: "1.7.2", notes: ["Fixed: DopaBot now knows your real balance, coins, spins, level, VIP tier, streak and orders — answered straight from your save, always accurate", "These answers now work identically on every browser, so iPhone/Safari home-screen users get the same smart assistant (the extra on-device AI boost is Chrome-only, but DopaBrain runs everywhere)", "DopaBot can also open Rewards, Collection or your live order from chat"] },

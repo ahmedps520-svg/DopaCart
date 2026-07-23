@@ -29,6 +29,9 @@ DC.views.home = (() => {
     home: "Your Space Upgrade",
     auto: "Because You Liked Car Gear",
     office: "Your Desk Upgrade",
+    pets: "For Your Best Friend",
+    toys: "Time to Play",
+    outdoors: "Answer the Call of the Wild",
   }[catId] || "Recommended for You");
 
   // Hair recs adapt to the profile picked on the Hair Care page.

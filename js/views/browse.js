@@ -16,7 +16,7 @@ DC.views.browse = (() => {
     <div class="page-head">
       <div>
         <div class="page-title">Shop</div>
-        <div class="page-sub">10 worlds of fictional wonders</div>
+        <div class="page-sub">${D.CATEGORIES.length} worlds of fictional wonders</div>
       </div>
     </div>
 
