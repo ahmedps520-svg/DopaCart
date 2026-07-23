@@ -43,6 +43,8 @@ DC.views.cart = (() => {
         <h3>Your cart is feeling empty</h3>
         <p>Fill it with things you'll never receive. That's the magic.</p>
         <button class="btn btn-primary" data-action="nav" data-route="home">Start Browsing</button>
+        <div style="height:10px"></div>
+        <button class="btn btn-ghost" data-action="redeem-gift">🎁 Redeem a gift code</button>
       </div>`;
     }
 
@@ -89,6 +91,11 @@ DC.views.cart = (() => {
     <button class="btn btn-primary btn-block" data-action="checkout">
       Checkout · <span id="checkout-total">${U.money(t.total)}</span>
     </button>
+    <div style="height:8px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-glass" style="flex:1" data-action="gift-cart">🎁 Gift this cart</button>
+      <button class="btn btn-glass" style="flex:1" data-action="redeem-gift">📥 Redeem a code</button>
+    </div>
     <div class="spacer"></div>
     <p class="center tiny muted">100% fake checkout. Your real wallet is safe. 💤</p>`;
   };
@@ -270,7 +277,84 @@ DC.views.cart = (() => {
     }, 2200);
   };
 
+  /* ── Gift a cart (share / redeem codes) ─────────────────── */
+  // A gift code is "DC1." + base64(cart object). Local-only, but it
+  // round-trips between two DopaCart installs (or two friends).
+  const giftCart = () => {
+    const items = S.cartItems();
+    if (!items.length) return;
+    const code = "DC1." + btoa(JSON.stringify(S.s.cart));
+    UI.modal(`
+      <h3 style="text-align:center;margin-bottom:4px">🎁 Gift this cart</h3>
+      <p class="center tiny muted" style="margin-bottom:14px">
+        Send this code to a friend — redeeming it fills their cart with these exact ${items.length} item${items.length === 1 ? "" : "s"}.
+      </p>
+      <div class="gift-code" id="gift-code">${code}</div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-block" data-action="copy-gift">Copy code 📋</button>
+      <div style="height:8px"></div>
+      <button class="btn btn-ghost btn-block" data-action="close-modal">Done</button>`);
+  };
+
+  const copyGift = (el) => {
+    const code = document.getElementById("gift-code")?.textContent || "";
+    const done = () => {
+      U.haptic(10);
+      el.textContent = "Copied! ✓";
+      U.toast("Code copied", "Now go make someone's fictional day", "🎁");
+    };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(code).then(done).catch(done);
+    else done();
+  };
+
+  const redeemGift = () => {
+    UI.modal(`
+      <h3 style="text-align:center;margin-bottom:4px">📥 Redeem a gift code</h3>
+      <p class="center tiny muted" style="margin-bottom:14px">Paste a friend's cart code — their picks land straight in yours.</p>
+      <textarea class="field" id="gift-input" rows="3" placeholder="DC1.…" style="resize:none;word-break:break-all"></textarea>
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-block" data-action="confirm-redeem">Redeem 🎁</button>`);
+  };
+
+  const confirmRedeem = () => {
+    const box = document.getElementById("gift-input");
+    const raw = (box?.value || "").trim();
+    const fail = () => {
+      DC.sound.play("buzz");
+      box?.animate([
+        { transform: "translateX(0)" }, { transform: "translateX(-8px)" },
+        { transform: "translateX(8px)" }, { transform: "translateX(0)" },
+      ], { duration: 300 });
+      U.toast("Invalid code", "That's not a DopaCart gift code", "🤨");
+    };
+    if (!raw.startsWith("DC1.")) return fail();
+    let gifted;
+    try {
+      gifted = JSON.parse(atob(raw.slice(4)));
+    } catch (_) { return fail(); }
+    if (typeof gifted !== "object" || gifted === null) return fail();
+
+    // Only accept keys that resolve to real products; merge quantities.
+    let added = 0;
+    Object.entries(gifted).forEach(([key, qty]) => {
+      const p = D.byId(D.splitKey(key).id);
+      const n = Number(qty);
+      if (!p || !Number.isFinite(n) || n <= 0) return;
+      S.s.cart[key] = Math.min((S.s.cart[key] || 0) + Math.floor(n), 99);
+      added += Math.floor(n);
+    });
+    if (!added) return fail();
+    S.save();
+    UI.closeModal();
+    U.haptic([15, 30, 15]);
+    DC.sound.play("fanfare");
+    U.confetti({ count: 100 });
+    DC.app.render();
+    U.toast("Gift redeemed!", `${added} item${added === 1 ? "" : "s"} added to your cart`, "🎁");
+  };
+
   const reset = () => { coupon = null; };
 
-  return { html, changeQty, applyCoupon, openCheckout, placeOrder, reset };
+  return { html, changeQty, applyCoupon, openCheckout, placeOrder, reset,
+    giftCart, copyGift, redeemGift, confirmRedeem };
 })();

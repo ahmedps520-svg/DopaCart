@@ -100,6 +100,14 @@ DC.views.home = (() => {
     </button>
 
     <div class="banner-scroll">
+      ${D.eventInfo() ? `
+      <button class="banner" style="background:linear-gradient(135deg,#1a0533,#c026d3)" data-action="flash-sheet">
+        <span class="b-kicker">🎉 DopaFriday</span>
+        <span class="b-title">Mega sale + 2× XP</span>
+        <span class="b-sub">12 deals up to 60% off — Fridays only</span>
+        <span class="b-timer"><span data-countdown="midnight">--:--:--</span></span>
+        <span class="b-emoji">🎉</span>
+      </button>` : ""}
       <button class="banner" style="background:linear-gradient(135deg,#3d0d0d,#c81d1d)" data-action="flash-sheet">
         <span class="b-kicker">⚡ Flash Sale</span>
         <span class="b-title">Up to 50% off</span>
@@ -121,6 +129,12 @@ DC.views.home = (() => {
         <span class="b-sub">Something shiny is inside</span>
         <span class="b-emoji">🎁</span>
       </button>` : ""}
+      <button class="banner" style="background:linear-gradient(135deg,#0d2b33,#0aa8c0)" data-action="nav" data-route="shopper">
+        <span class="b-kicker">🤖 DopaBot</span>
+        <span class="b-title">Your personal shopper</span>
+        <span class="b-sub">Chat your way to curated picks</span>
+        <span class="b-emoji">🤖</span>
+      </button>
       <button class="banner" style="background:linear-gradient(135deg,#0a1f3d,#1f5fc0)" data-action="open-category" data-id="tech">
         <span class="b-kicker">🚀 New Season</span>
         <span class="b-title">Tech that slaps</span>

@@ -29,6 +29,8 @@ DC.store = (() => {
     boxReadyAt: Date.now(),    // first mystery box is ready immediately
     stats: { spent: 0, orders: 0, spinsDone: 0, boxes: 0, coupons: 0, cats: [] },
     ach: [],                   // unlocked achievement ids
+    myReviews: {},             // { productId: { stars, text, ts } }
+    qc: null,                  // daily quest counters (rebuilt each day)
     notifs: [],
     theme: "crimson",
     unlockedThemes: ["crimson"],
@@ -182,6 +184,7 @@ DC.store = (() => {
     bump(p.cat, 3);
     save();
     checkAch();
+    questBump("favs");
     return true;
   };
 
@@ -196,6 +199,7 @@ DC.store = (() => {
   const recordView = (id) => {
     const p = DC.data.byId(id);
     if (!p) return;
+    if (!s.viewed.includes(id)) questBump("views");     // fresh views only — no refresh farming
     s.viewed = [id, ...s.viewed.filter((v) => v !== id)].slice(0, 12);
     bump(p.cat, 1);
     if (!s.viewedAll.includes(id)) {
@@ -217,6 +221,7 @@ DC.store = (() => {
     s.cart[key] = (s.cart[key] || 0) + qty;
     bump(p.cat, 4);
     save();
+    questBump("carts");
     DC.app?.refreshBadges?.();
   };
 
@@ -292,6 +297,7 @@ DC.store = (() => {
     s.cart = {};
 
     // Progression + cashback: this is where the dopamine lives.
+    const tierBefore = tierInfo().idx;
     s.stats.spent += totals.total;
     s.stats.orders += 1;
     if (couponCode) s.stats.coupons += 1;
@@ -299,12 +305,20 @@ DC.store = (() => {
       if (!s.stats.cats.includes(it.p.cat)) s.stats.cats.push(it.p.cat);
       bump(it.p.cat, 6);
     });
-    const cashback = Math.round(totals.total * 0.10);
+    // VIP tier sets the cashback rate; DopaFriday doubles order XP.
+    const ti = tierInfo();
+    const cashback = Math.round(totals.total * ti.tier.cashback / 100);
     const coins = Math.max(5, Math.floor(totals.total / 10));
     s.cash += cashback; s.coins += coins;
     save();
-    addXP(Math.max(10, Math.round(totals.total / 4)));
+    if (ti.idx > tierBefore) {
+      DC.sound?.play("levelup");
+      pushNotif(ti.tier.emoji, `VIP ${ti.tier.name} reached!`, `Cashback is now ${ti.tier.cashback}% on every order.`);
+    }
+    const xpMult = DC.data.eventInfo()?.xpMult || 1;
+    addXP(Math.max(10, Math.round(totals.total / 4)) * xpMult);
     checkAch();
+    questBump("orders");
     DC.app?.refreshBadges?.();
     return { ok: true, order, cashback, coins };
   };
@@ -386,7 +400,112 @@ DC.store = (() => {
     s.stats.spinsDone += 1;
     save();
     checkAch();
+    questBump("spins");
     return true;
+  };
+
+  /* ── Daily quests ───────────────────────────────────────── */
+  // Three quests rotate in daily (seeded). Counters live in s.qc and
+  // reset when the calendar day changes. Completions auto-pay.
+  const QUESTS = [
+    { id: "views", emoji: "👀", name: "Window Shopper", desc: "View 5 products", goal: 5, coins: 40, xp: 30 },
+    { id: "carts", emoji: "🛒", name: "Cart Filler", desc: "Add 3 items to your cart", goal: 3, coins: 40, xp: 30 },
+    { id: "spins", emoji: "🎡", name: "Spin Doctor", desc: "Spin the lucky wheel", goal: 1, coins: 30, xp: 25 },
+    { id: "favs", emoji: "❤️", name: "Heart Giver", desc: "Favorite 2 products", goal: 2, coins: 30, xp: 25 },
+    { id: "orders", emoji: "📦", name: "Order Up", desc: "Place an order", goal: 1, coins: 60, xp: 50 },
+    { id: "cats", emoji: "🧭", name: "Category Hopper", desc: "Browse 3 categories", goal: 3, coins: 40, xp: 30 },
+  ];
+
+  const todayQuests = () => U.pickSeeded(QUESTS, 3, U.daySeed() * 3 + 7);
+
+  const ensureQC = () => {
+    if (!s.qc || s.qc.day !== todayStr()) {
+      s.qc = { day: todayStr(), n: {}, seen: [], claimed: [] };
+      save();
+    }
+  };
+
+  const questProgress = (q) => {
+    ensureQC();
+    return U.clamp((s.qc.n[q.id] || 0) / q.goal, 0, 1);
+  };
+
+  const questBump = (kind, uniq) => {
+    ensureQC();
+    if (kind === "cats") {
+      if (s.qc.seen.includes(uniq)) return;
+      s.qc.seen.push(uniq);
+      s.qc.n.cats = s.qc.seen.length;
+    } else {
+      s.qc.n[kind] = (s.qc.n[kind] || 0) + 1;
+    }
+    save();
+    todayQuests().forEach((q) => {
+      if (!s.qc.claimed.includes(q.id) && (s.qc.n[q.id] || 0) >= q.goal) {
+        s.qc.claimed.push(q.id);
+        s.coins += q.coins;
+        save();
+        DC.sound?.play("badge");
+        pushNotif(q.emoji, "Quest complete: " + q.name, `+${q.coins} coins · +${q.xp} XP`);
+        addXP(q.xp);
+        if (s.qc.claimed.length >= 3) {
+          s.spins += 1;
+          save();
+          pushNotif("🌟", "Daily sweep!", "All 3 quests done — bonus spin added 🎡");
+        }
+      }
+    });
+    DC.app?.refreshBadges?.();
+  };
+
+  /* ── VIP tiers (lifetime spending) ──────────────────────── */
+  const TIERS = [
+    { id: "bronze", name: "Bronze", emoji: "🥉", at: 0, cashback: 10 },
+    { id: "silver", name: "Silver", emoji: "🥈", at: 25000, cashback: 12 },
+    { id: "gold", name: "Gold", emoji: "🥇", at: 75000, cashback: 14 },
+    { id: "platinum", name: "Platinum", emoji: "💠", at: 150000, cashback: 16 },
+    { id: "diamond", name: "Diamond", emoji: "💎", at: 300000, cashback: 20 },
+  ];
+
+  const tierInfo = (spent = s.stats.spent) => {
+    let idx = 0;
+    TIERS.forEach((t, i) => { if (spent >= t.at) idx = i; });
+    const next = TIERS[idx + 1] || null;
+    return {
+      idx, tier: TIERS[idx], next,
+      toNext: next ? next.at - spent : 0,
+      pct: next ? U.clamp((spent - TIERS[idx].at) / (next.at - TIERS[idx].at), 0, 1) : 1,
+    };
+  };
+
+  /* ── Your own reviews ───────────────────────────────────── */
+  const myReview = (pid) => s.myReviews[pid] || null;
+
+  const addReview = (pid, stars, text) => {
+    const first = !s.myReviews[pid];
+    s.myReviews[pid] = { stars, text, ts: Date.now() };
+    save();
+    if (first) {
+      s.coins += 30;
+      save();
+      pushNotif("✍️", "Review published", "+30 coins · +15 XP for your fictional wisdom", true);
+      addXP(15);
+    }
+    return first;
+  };
+
+  /* ── Unboxing (delivered orders) ────────────────────────── */
+  const unboxOrder = (orderId) => {
+    const o = s.orders.find((x) => x.id === orderId);
+    if (!o || o.unboxed || o.returned || orderProgress(o).pct < 1) return null;
+    o.unboxed = true;
+    const h = U.hash(o.id + "unbox");
+    const coins = 20 + (h % 5) * 10;                     // 20–60
+    const xp = 20 + ((h >>> 3) % 4) * 10;                // 20–50
+    s.coins += coins;
+    save();
+    addXP(xp);
+    return { coins, xp };
   };
 
   /* ── Achievements ───────────────────────────────────────── */
@@ -471,6 +590,9 @@ DC.store = (() => {
     STAGES, placeOrder, orderProgress, activeOrders, sweepDeliveries,
     returnableOrders, returnOrder, fileComplaint,
     boxReady, openBox, useSpin,
+    QUESTS, todayQuests, questProgress, questBump,
+    TIERS, tierInfo,
+    myReview, addReview, unboxOrder,
     ACH, checkAch,
     exportData, importData, clearData,
   };

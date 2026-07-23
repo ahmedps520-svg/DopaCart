@@ -1011,7 +1011,189 @@
   border-radius: 999px;
 }
 
+/* ═══ Daily quests ═══ */
+.quest-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 2px;
+}
+.quest-row + .quest-row { border-top: 1px solid var(--border); }
+.quest-row .q-e { font-size: 24px; flex: 0 0 32px; text-align: center; }
+.quest-row .q-n { font-weight: 700; font-size: 14px; }
+.quest-row.done .q-n { color: var(--green); }
+.quest-row.done .xp-bar i { background: var(--green); }
+
+/* ═══ VIP tier card ═══ */
+.tier-card {
+  padding: 15px;
+  border-radius: var(--r-lg);
+  margin-bottom: 4px;
+}
+
+/* ═══ Wrapped ═══ */
+.wrap-hero {
+  text-align: center;
+  padding: 30px 18px;
+  border-radius: var(--r-xl);
+  background: var(--accent-grad);
+  color: var(--on-accent);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-accent);
+}
+.wrap-hero .w-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.wrap-hero .w-big {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 6px 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+.wrap-hero .w-sub { font-size: 13px; opacity: 0.85; }
+.wrap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.wrap-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  animation: card-in 0.4s var(--ease-out) backwards;
+}
+.wrap-tile:nth-child(2) { animation-delay: 0.05s; }
+.wrap-tile:nth-child(3) { animation-delay: 0.1s; }
+.wrap-tile:nth-child(4) { animation-delay: 0.15s; }
+.wrap-tile:nth-child(5) { animation-delay: 0.2s; }
+.wrap-tile:nth-child(6) { animation-delay: 0.25s; }
+.wrap-tile:nth-child(7) { animation-delay: 0.3s; }
+.wrap-tile:nth-child(8) { animation-delay: 0.35s; }
+.wrap-tile .w-e { font-size: 22px; }
+.wrap-tile .w-v { font-size: 21px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.wrap-tile .w-k { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.75; }
+
+/* ═══ Collection gallery ═══ */
+.coll-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 7px;
+  margin-bottom: 6px;
+}
+.coll-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-out);
+}
+.coll-cell:active { transform: scale(0.92); }
+.coll-cell:not(.owned) span { filter: grayscale(1) opacity(0.35); }
+.coll-cell.owned { border-color: var(--border-strong); }
+.coll-cell.owned::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  pointer-events: none;
+}
+.coll-cell .p-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* ═══ DopaBot chat ═══ */
+.bot-chat { display: flex; flex-direction: column; gap: 10px; }
+.bot-msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  animation: card-in 0.3s var(--ease-out) backwards;
+}
+.bot-msg.me { justify-content: flex-end; }
+.bot-ava {
+  flex: 0 0 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+.bot-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 18px 18px 18px 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.bot-msg.me .bot-bubble {
+  border-radius: 18px 18px 5px 18px;
+  background: var(--accent-grad);
+  color: var(--on-accent);
+  border: none;
+}
+.bot-results { animation: card-in 0.35s var(--ease-out) backwards; }
+
+/* ═══ Product page extras ═══ */
+.bundle-thumb {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.bundle-thumb .p-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.star-row { display: flex; justify-content: center; gap: 8px; }
+.star-btn {
+  font-size: 32px;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-spring), color 0.15s;
+}
+.star-btn.lit { color: var(--gold); }
+.star-btn:active { transform: scale(1.25); }
+
+/* ═══ Gift codes ═══ */
+.gift-code {
+  font-family: ui-monospace, monospace;
+  font-size: 11.5px;
+  line-height: 1.5;
+  word-break: break-all;
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  padding: 12px;
+  max-height: 110px;
+  overflow-y: auto;
+  user-select: all;
+}
+
 @media (min-width: 480px) {
   .prod-grid { grid-template-columns: 1fr 1fr 1fr; }
   .cat-grid { grid-template-columns: 1fr 1fr 1fr; }
+  .coll-grid { grid-template-columns: repeat(8, 1fr); }
 }

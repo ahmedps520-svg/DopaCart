@@ -19,7 +19,7 @@ DC.views.orders = (() => {
       <div class="oc-top">
         <span class="oc-id">${o.num}</span>
         <span class="oc-status ${done ? "done" : ""}" ${o.returned ? 'style="background:var(--surface-2);color:var(--text-2)"' : ""}>
-          ${o.returned ? "↩️ Returned" : done ? "✅ Delivered" : prog.stage.emoji + " " + prog.stage.label}
+          ${o.returned ? "↩️ Returned" : done ? (o.unboxed ? "✅ Delivered" : "🎁 Unbox me!") : prog.stage.emoji + " " + prog.stage.label}
         </span>
       </div>
       <div class="oc-items">
@@ -194,6 +194,9 @@ DC.views.track = (() => {
       <div class="set-row"><span class="s-e">📍</span><div class="s-t">Delivering to</div>
         <span class="s-v">${o.address}</span></div>
     </div>
+    ${done && !o.returned && !o.unboxed ? `
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-block" data-action="unbox-order" data-id="${o.id}">🎁 Unbox your delivery</button>` : ""}
     ${done ? `
       <div class="spacer"></div>
       <button class="btn btn-glass btn-block" data-action="rate-driver">⭐ Rate ${o.driver.name.split(" ")[0]} 5 stars</button>` : ""}

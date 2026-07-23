@@ -66,6 +66,54 @@ DC.views.rewards = (() => {
       <div class="wallet-card glass"><div class="e">🪙</div><div class="v">${S.s.coins.toLocaleString()}</div><div class="k">Coins</div></div>
     </div>
 
+    ${(() => {
+      const ti = S.tierInfo();
+      return `
+    <div class="tier-card glass">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:32px">${ti.tier.emoji}</span>
+        <div style="flex:1">
+          <b style="font-size:16px">VIP ${ti.tier.name}</b>
+          <div class="tiny muted">${ti.tier.cashback}% cashback on every order</div>
+        </div>
+        ${ti.next ? `<div style="text-align:right"><div class="tiny muted">next: ${ti.next.emoji} ${ti.next.name}</div><b class="tiny">${U.moneyShort(ti.toNext)} to go</b></div>` : `<b class="tiny" style="color:var(--gold)">MAX TIER 👑</b>`}
+      </div>
+      <div class="xp-bar" style="margin-top:10px"><i style="width:${Math.round(ti.pct * 100)}%"></i></div>
+      <div class="tiny muted" style="margin-top:6px">Lifetime spent: ${U.money(S.s.stats.spent)} — every riyal counts toward your tier.</div>
+    </div>`;
+    })()}
+
+    ${(() => {
+      const quests = S.todayQuests();
+      const done = quests.filter((q) => S.questProgress(q) >= 1).length;
+      return UI.section("🎯 Daily Quests", `${done} / 3 complete · resets at midnight — sweep all 3 for a bonus spin`) + `
+    <div class="glass" style="padding:14px">
+      ${quests.map((q) => {
+        const pct = S.questProgress(q);
+        const cur = Math.min(Math.round(pct * q.goal), q.goal);
+        return `
+        <div class="quest-row ${pct >= 1 ? "done" : ""}">
+          <span class="q-e">${pct >= 1 ? "✅" : q.emoji}</span>
+          <div style="flex:1">
+            <div class="q-n">${q.name}</div>
+            <div class="tiny muted">${q.desc} · +${q.coins}🪙 +${q.xp}XP</div>
+            <div class="xp-bar" style="margin-top:5px"><i style="width:${Math.round(pct * 100)}%"></i></div>
+          </div>
+          <b class="tiny" style="flex:0 0 auto">${cur}/${q.goal}</b>
+        </div>`;
+      }).join("")}
+    </div>`;
+    })()}
+
+    <div class="wallet-row" style="margin-top:14px">
+      <button class="wallet-card glass" data-action="nav" data-route="wrapped" style="cursor:pointer">
+        <div class="e">📊</div><div class="v" style="font-size:15px">Wrapped</div><div class="k">Your stats story</div>
+      </button>
+      <button class="wallet-card glass" data-action="nav" data-route="collection" style="cursor:pointer">
+        <div class="e">🗃️</div><div class="v" style="font-size:15px">Collection</div><div class="k">Products owned</div>
+      </button>
+    </div>
+
     ${UI.section("🔥 Daily Streak")}
     <div class="glass" style="padding:16px">
       <div style="display:flex;justify-content:space-between;align-items:center">

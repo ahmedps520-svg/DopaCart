@@ -20,6 +20,9 @@ DC.app = (() => {
     category: { view: () => DC.views.category, tab: "browse" },
     product: { view: () => DC.views.product, tab: "browse" },
     order: { view: () => DC.views.track, tab: "orders" },
+    wrapped: { view: () => DC.views.wrapped, tab: "rewards" },
+    collection: { view: () => DC.views.collection, tab: "rewards" },
+    shopper: { view: () => DC.views.shopper, tab: "home" },
   };
 
   let current = { name: "home", params: {} };
@@ -160,6 +163,22 @@ DC.app = (() => {
     refreshBadges();
   };
 
+  /* ── Unboxing a delivered order ─────────────────────────── */
+  const unboxOrder = (orderId) => {
+    const r = S.unboxOrder(orderId);
+    if (!r) { U.toast("Nothing to unbox", "This one's already open", "📭"); return; }
+    U.haptic([20, 30, 20, 40]);
+    DC.sound.play("shimmer");
+    U.confetti({ count: 120 });
+    UI.modal(`
+      <div class="reward-burst">📦</div>
+      <h3 style="margin:6px 0 2px">Unboxed!</h3>
+      <div class="reward-amount">+${r.coins} coins 🪙</div>
+      <p class="muted" style="font-size:13.5px;margin-bottom:16px">+${r.xp} XP · The packing peanuts were fictional but the joy is real.</p>
+      <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Love it</button>
+    `, "dialog");
+  };
+
   const openFlashSheet = () => {
     const flash = D.flashSale();
     UI.modal(`
@@ -226,6 +245,16 @@ DC.app = (() => {
     "rate-driver": () => { U.haptic([15, 25, 15]); U.confetti({ count: 60 }); U.toast("5 stars sent!", "Your imaginary driver is thrilled", "⭐"); },
 
     "claim-daily": () => claimDaily(),
+    "bot-choice": (el) => DC.views.shopper.choose(el.dataset.id),
+    "unbox-order": (el) => unboxOrder(el.dataset.id),
+    "write-review": () => DC.views.product.openReview(),
+    "review-star": (el) => DC.views.product.setStars(Number(el.dataset.id), el),
+    "submit-review": () => DC.views.product.submitReview(),
+    "add-bundle": (el) => DC.views.product.addBundle(el),
+    "gift-cart": () => DC.views.cart.giftCart(),
+    "copy-gift": (el) => DC.views.cart.copyGift(el),
+    "redeem-gift": () => DC.views.cart.redeemGift(),
+    "confirm-redeem": () => DC.views.cart.confirmRedeem(),
     spin: () => DC.views.rewards.spin(),
     "skip-spin": () => DC.views.rewards.skipSpin(),
     "buy-spin": () => DC.views.rewards.buySpin(),
@@ -343,7 +372,7 @@ DC.app = (() => {
   };
 
   /* ── Tickers ────────────────────────────────────────────── */
-  let sessionFlags = { boxNotified: false, flashNotified: false, dropNotified: false };
+  let sessionFlags = { boxNotified: false, flashNotified: false, dropNotified: false, favDropNotified: false, cartNudged: false };
 
   const startTickers = () => {
     // 1s: countdowns
@@ -382,6 +411,22 @@ DC.app = (() => {
         S.pushNotif("🚨", "New Limited Drop", `${pick.emoji} ${pick.name} — before it fictionally sells out!`);
       }
     }, 150000);
+
+    // Price-drop alert when a favorited item is in today's flash sale.
+    setTimeout(() => {
+      if (sessionFlags.favDropNotified) return;
+      sessionFlags.favDropNotified = true;
+      const faved = D.flashSale().find((p) => S.isFav(p.id));
+      if (faved) S.pushNotif("📉", "Price drop on a favorite!", `${faved.emoji} ${faved.name} is ${faved.discount}% off — today only.`);
+    }, 75000);
+
+    // Cart abandonment nudge — classic e-commerce guilt, lovingly parodied.
+    setTimeout(() => {
+      if (sessionFlags.cartNudged || S.cartCount() === 0) return;
+      sessionFlags.cartNudged = true;
+      const it = S.cartItems()[0];
+      if (it) S.pushNotif("👀", "Your cart misses you", `${it.p.emoji} ${it.p.name} is still waiting — code COMEBACK15 takes 15% off.`);
+    }, 8 * 60000);
   };
 
   /* ── Boot ───────────────────────────────────────────────── */
@@ -403,6 +448,17 @@ DC.app = (() => {
     }
     if (S.grantDailySpin()) {
       setTimeout(() => U.toast("Free daily spin added!", "Visit Rewards to use it", "🎡"), 2600);
+    }
+    // Returning with a full cart → welcome-back coupon nudge.
+    if (away > 0 && S.cartCount() > 0) {
+      setTimeout(() => U.toast("Still in your cart 👀", "Code COMEBACK15 takes 15% off", "🛒", 4000), 3400);
+    }
+    // DopaFriday — one in-app ping per event day.
+    const ev = D.eventInfo();
+    if (ev && S.s.lastEventNotif !== new Date().toDateString()) {
+      S.s.lastEventNotif = new Date().toDateString();
+      S.save();
+      setTimeout(() => S.pushNotif(ev.emoji, `${ev.name} is LIVE`, ev.tagline), 5000);
     }
 
     // First-time greeting

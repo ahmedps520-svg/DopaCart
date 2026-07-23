@@ -50,6 +50,7 @@ DC.views.category = (() => {
     const cat = D.category(params.id);
     if (!cat) return `<div class="empty-state"><div class="emoji">🤔</div><h3>Category not found</h3></div>`;
     activeSub = "All";
+    S.questBump("cats", cat.id);       // Category Hopper daily quest
     return render(cat);
   };
 

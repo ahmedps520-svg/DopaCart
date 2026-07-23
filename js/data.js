@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.5.0";
+  const VERSION = "1.6.0";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -317,14 +317,22 @@ DC.data = (() => {
   const defaultKey = (p) =>
     p.options ? [p.id, ...Object.values(p.options).map((g) => g[0][0])].join("~") : p.id;
 
+  /* ── Seasonal event (DopaFriday — every Friday) ─────────── */
+  const eventInfo = () =>
+    new Date().getDay() === 5
+      ? { id: "dopafriday", name: "DopaFriday", emoji: "🎉", xpMult: 2, tagline: "Mega deals + 2× XP, Fridays only" }
+      : null;
+
   /* ── Flash sale (rotates daily, deterministic) ──────────── */
+  // On DopaFriday the sale doubles in size and cuts deeper.
   const flashSale = () => {
     const seed = daySeed();
-    const picks = pickSeeded(PRODUCTS.filter((p) => p.price >= 50), 6, seed);
+    const ev = eventInfo();
+    const picks = pickSeeded(PRODUCTS.filter((p) => p.price >= 50), ev ? 12 : 6, seed);
     const rand = seededRand(seed * 7 + 1);
     return picks.map((p) => ({
       ...p,
-      discount: 20 + Math.round(rand() * 6) * 5,         // 20–50 %
+      discount: (ev ? 30 : 20) + Math.round(rand() * 6) * 5,   // 20–50 % (30–60 on DopaFriday)
     }));
   };
 
@@ -350,12 +358,24 @@ DC.data = (() => {
 
   const dailyPicks = () => pickSeeded(PRODUCTS, 8, daySeed() * 13 + 5);
 
+  /* ── Bundles ("Frequently bought together") ─────────────── */
+  // Two stable companions per product: one from its own category,
+  // one from a sibling category — deterministic via the product id.
+  const bundleFor = (p) => {
+    const same = PRODUCTS.filter((x) => x.id !== p.id && x.cat === p.cat);
+    const other = PRODUCTS.filter((x) => x.cat !== p.cat && !x.options);
+    const a = pickSeeded(same, 1, hash(p.id + "bundle"))[0];
+    const b = pickSeeded(other, 1, hash(p.id + "bundle2"))[0];
+    return [a, b].filter(Boolean);
+  };
+
   /* ── Coupons ────────────────────────────────────────────── */
   const COUPONS = {
     SAVE10: { pct: 10, label: "10% off" },
     DOPA20: { pct: 20, label: "20% off" },
     LUCKY25: { pct: 25, label: "25% off" },
     VIP30: { pct: 30, label: "30% off" },
+    COMEBACK15: { pct: 15, label: "15% off — welcome back" },
     FREESHIP: { pct: 0, freeShip: true, label: "Free delivery" },
   };
 
@@ -418,6 +438,7 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.6.0", notes: ["Daily Quests — 3 rotating goals a day, auto-paying coins & XP (+ bonus spin for the sweep)", "VIP tiers Bronze → Diamond — lifetime spending boosts your cashback up to 20%", "Write your own product reviews (first review per product pays 30 coins)", "Unbox delivered orders for surprise coins & XP", "Frequently Bought Together bundles on every product", "Your Wrapped — a stats page of your fictional shopping year", "Collection gallery — every product you've ever owned, Pokédex style", "DopaBot personal shopper — chat your way to curated picks", "Gift a cart — share a code, import a cart", "DopaFriday — bigger flash sales + 2× XP every Friday", "Price-drop alerts for favorites & cart reminders (code COMEBACK15)"] },
     { v: "1.5.0", notes: ["Color options for Apple products — real colorways per model", "Support section in Settings: Returns & Refunds (full DopaCash back on delivered orders)", "File a Complaint — fictional tickets, real coin compensation (once daily)"] },
     { v: "1.4.1", notes: ["Fixed monitor photo mismatch — now Alienware 27 (matching its picture)", "Added Apple Studio Display with its official image"] },
     { v: "1.4.0", notes: ["New Apple category — iPhone 17 lineup, iPads, Macs, Watch, Vision Pro & more with official images from apple.com", "Choose storage and size options on Apple products", "Buy spins any time (stack as many as you like) + skip the spin animation", "Fixed product photos to match what products actually are", "Removed the Beauty category"] },
@@ -434,5 +455,6 @@ DC.data = (() => {
     VERSION, CATEGORIES, PRODUCTS, COUPONS, DRIVERS, BADGES, CHANGELOG, HAIR_TYPES,
     byId, byCat, category, search, flashSale, dailyPicks, reviewsFor,
     splitKey, optionExtra, defaultKey, priceOf, unitPrice,
+    eventInfo, bundleFor,
   };
 })();

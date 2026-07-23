@@ -94,7 +94,47 @@ DC.views.product = (() => {
     Estimated arrival: <b style="color:var(--text)">${p.mins} minutes</b> via certified dopamine courier.
     Free returns to the void, no questions asked.</p>
 
+    ${UI.section("🧩 Frequently bought together")}
+    ${(() => {
+      const mates = D.bundleFor(p);
+      if (!mates.length) return "";
+      const total = D.unitPrice(p, selOpts) + mates.reduce((a, m) => a + UI.priceOf(m).price, 0);
+      return `
+      <div class="glass" style="padding:14px">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:10px">
+          ${[p, ...mates].map((b, i) => `
+            ${i ? '<span style="font-weight:800;color:var(--text-2)">+</span>' : ""}
+            <div class="bundle-thumb" style="${UI.gradStyle(b)}" data-action="open-product" data-id="${b.id}">
+              <span>${b.emoji}</span>${UI.photoHtml(b)}
+            </div>`).join("")}
+        </div>
+        ${mates.map((m) => `<div class="tiny muted" style="text-align:center">${m.emoji} ${U.esc(m.name)} · ${U.money(UI.priceOf(m).price)}</div>`).join("")}
+        <div style="height:10px"></div>
+        <button class="btn btn-glass btn-block" data-action="add-bundle" data-id="${p.id}">
+          Add all 3 · ${U.money(total)} <span class="tiny" style="color:var(--green);font-weight:700">+15 XP bundle bonus</span>
+        </button>
+      </div>`;
+    })()}
+
     ${UI.section("Reviews", `${U.num(p.reviews)} verified imaginers`)}
+    ${(() => {
+      const mine = S.myReview(p.id);
+      return mine ? `
+      <div class="review" style="border-color:var(--accent)">
+        <div class="review-head">
+          <span class="review-ava">😎</span>
+          <div style="flex:1">
+            <div class="review-name">You <span class="verified">✓ Actual Fictional Buyer</span></div>
+            <div class="review-stars">${"★".repeat(mine.stars)}${"☆".repeat(5 - mine.stars)}</div>
+          </div>
+          <span class="tiny muted">${U.timeAgo(mine.ts)}</span>
+        </div>
+        <div class="review-body">${U.esc(mine.text)}</div>
+      </div>` : "";
+    })()}
+    <button class="btn btn-glass btn-block" data-action="write-review" style="margin-bottom:12px">
+      ✍️ ${S.myReview(p.id) ? "Edit your review" : "Write a review · +30 🪙"}
+    </button>
     ${reviews.map((r) => `
       <div class="review">
         <div class="review-head">
@@ -161,6 +201,67 @@ DC.views.product = (() => {
 
   const getQty = () => qty;
 
+  /* ── Write / edit your own review ───────────────────────── */
+  let reviewStars = 5;
+
+  const openReview = () => {
+    const p = D.byId(currentId);
+    if (!p) return;
+    const mine = S.myReview(p.id);
+    reviewStars = mine ? mine.stars : 5;
+    UI.modal(`
+      <h3 style="text-align:center;margin-bottom:4px">✍️ Review ${U.esc(p.name)}</h3>
+      <p class="center tiny muted" style="margin-bottom:14px">You fictionally own this, so your opinion fictionally matters.</p>
+      <div class="star-row" id="review-stars">
+        ${[1, 2, 3, 4, 5].map((n) => `
+          <button class="star-btn ${n <= reviewStars ? "lit" : ""}" data-action="review-star" data-id="${n}">★</button>`).join("")}
+      </div>
+      <textarea class="field" id="review-text" rows="4" maxlength="300"
+        placeholder="Changed my life. Would order fictionally again."
+        style="resize:none;margin-top:12px">${mine ? U.esc(mine.text) : ""}</textarea>
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-block" data-action="submit-review">Publish review</button>
+      ${mine ? "" : `<p class="center tiny muted" style="margin-top:10px">First review of this product pays 30 coins + 15 XP 🪙</p>`}`);
+  };
+
+  const setStars = (n, el) => {
+    reviewStars = n;
+    [...el.parentElement.children].forEach((c, i) => c.classList.toggle("lit", i < n));
+    U.haptic(6);
+  };
+
+  const submitReview = () => {
+    const box = document.getElementById("review-text");
+    const text = (box?.value || "").trim();
+    if (!text) {
+      box?.animate([
+        { transform: "translateX(0)" }, { transform: "translateX(-8px)" },
+        { transform: "translateX(8px)" }, { transform: "translateX(0)" },
+      ], { duration: 300 });
+      U.toast("Say something!", "Even fictional reviews need words", "📝");
+      return;
+    }
+    const first = S.addReview(currentId, reviewStars, text);
+    UI.closeModal();
+    U.haptic([15, 30, 15]);
+    DC.sound.play(first ? "chime" : "zip");
+    if (first) U.confetti({ count: 70 });
+    DC.app.render();
+    U.toast(first ? "Review published!" : "Review updated!", first ? "+30 coins · +15 XP" : "Your wisdom, refreshed", "✍️");
+  };
+
+  /* ── Bundle add (this product + its two companions) ─────── */
+  const addBundle = (el) => {
+    const p = D.byId(currentId);
+    if (!p) return;
+    [p, ...D.bundleFor(p)].forEach((b) => S.addToCart(D.defaultKey(b), 1));
+    U.haptic([12, 20, 12]);
+    DC.sound.play("pop");
+    UI.flyToCart(el, p.emoji);
+    S.addXP(15);
+    U.toast("Bundle added!", "3 items · +15 XP bundle bonus", "🧩", 2200);
+  };
+
   // Switch the hero between the real photo ("__photo") and emoji-art views.
   const setHero = (value, thumbEl) => {
     const hero = document.getElementById("pd-hero");
@@ -198,5 +299,6 @@ DC.views.product = (() => {
     <div class="sk sk-line" style="width:45%"></div>
     <div class="sk sk-line" style="width:30%;height:26px;margin-top:14px"></div>
     ${DC.ui.skRow(3)}`,
-    html, changeQty, getQty, setOpt, getKey, setHero };
+    html, changeQty, getQty, setOpt, getKey, setHero,
+    openReview, setStars, submitReview, addBundle };
 })();
