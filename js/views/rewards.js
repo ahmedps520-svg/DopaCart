@@ -7,19 +7,64 @@
 DC.views = DC.views || {};
 
 DC.views.rewards = (() => {
-  const U = DC.util, S = DC.store, UI = DC.ui;
+  const U = DC.util, D = DC.data, S = DC.store, UI = DC.ui;
 
   /* ── Spin wheel config ──────────────────────────────────── */
+  // Base values only — cash/coin/XP payouts scale with the VIP tier's
+  // spinMult (×1 Bronze → ×2 Diamond), and the coupon segment hands
+  // out the tier's exclusive code (up to 50% off at Diamond).
   const SEGMENTS = [
-    { label: "SAR 800", emoji: "💵", color: "#c0392b", weight: 17, apply: () => { S.earnCash(800); return "+SAR 800 DopaCash"; } },
-    { label: "75🪙", emoji: "🪙", color: "#8e44ad", weight: 15, apply: () => { S.earnCoins(75); return "+75 coins"; } },
-    { label: "250XP", emoji: "⭐", color: "#2980b9", weight: 13, apply: () => { S.addXP(250); return "+250 XP"; } },
-    { label: "30%", emoji: "🏷️", color: "#16a085", weight: 10, apply: () => "Coupon VIP30 — 30% off at checkout!" },
-    { label: "SAR 5,000", emoji: "💰", color: "#f39c12", weight: 4, apply: () => { S.earnCash(5000); return "JACKPOT! +SAR 5,000 DopaCash"; } },
-    { label: "+2🎡", emoji: "🎡", color: "#d35400", weight: 9, apply: () => { S.s.spins += 2; S.save(); return "+2 extra spins"; } },
-    { label: "150🪙", emoji: "🪙", color: "#27ae60", weight: 12, apply: () => { S.earnCoins(150); return "+150 coins"; } },
-    { label: "📦", emoji: "📦", color: "#7f8c8d", weight: 8, apply: () => { S.s.boxReadyAt = Date.now(); S.save(); return "Mystery Box recharged — it's ready to open right now!"; } },
+    { emoji: "💵", color: "#c0392b", weight: 17, kind: "cash", base: 800 },
+    { emoji: "🪙", color: "#8e44ad", weight: 15, kind: "coins", base: 75 },
+    { emoji: "⭐", color: "#2980b9", weight: 13, kind: "xp", base: 250 },
+    { emoji: "🏷️", color: "#16a085", weight: 10, kind: "coupon" },
+    { emoji: "💰", color: "#f39c12", weight: 4, kind: "cash", base: 5000, jackpot: true },
+    { emoji: "🎡", color: "#d35400", weight: 9, kind: "spins", base: 2 },
+    { emoji: "🪙", color: "#27ae60", weight: 12, kind: "coins", base: 150 },
+    { emoji: "📦", color: "#7f8c8d", weight: 8, kind: "box" },
   ];
+
+  // Tier bonus note appended to reward messages ("×1.5 Gold bonus").
+  const multNote = (tier) =>
+    tier.spinMult > 1 ? ` — ×${tier.spinMult} ${tier.name} bonus applied` : "";
+
+  /* Resolve a segment into { label, msg, apply } at the current tier. */
+  const segReward = (seg) => {
+    const tier = S.tierInfo().tier;
+    const v = seg.base ? Math.round(seg.base * tier.spinMult) : 0;
+    switch (seg.kind) {
+      case "cash": return {
+        label: "SAR " + v.toLocaleString(),
+        msg: (seg.jackpot ? "JACKPOT! " : "") + `+SAR ${v.toLocaleString()} DopaCash${multNote(tier)}`,
+        apply: () => S.earnCash(v),
+      };
+      case "coins": return {
+        label: `${v}🪙`,
+        msg: `+${v} coins${multNote(tier)}`,
+        apply: () => S.earnCoins(v),
+      };
+      case "xp": return {
+        label: `${v} XP`,
+        msg: `+${v} XP${multNote(tier)}`,
+        apply: () => S.addXP(v),
+      };
+      case "spins": return {
+        label: `+${seg.base}🎡`,
+        msg: `+${seg.base} extra spins`,
+        apply: () => { S.s.spins += seg.base; S.save(); },
+      };
+      case "coupon": return {
+        label: D.COUPONS[tier.coupon].pct + "% off",
+        msg: `${tier.emoji} ${tier.name} exclusive: coupon ${tier.coupon} — ${D.COUPONS[tier.coupon].pct}% off at checkout!`,
+        apply: () => {},
+      };
+      case "box": return {
+        label: "Mystery Box!",
+        msg: "Mystery Box recharged — it's ready to open right now!",
+        apply: () => { S.s.boxReadyAt = Date.now(); S.save(); },
+      };
+    }
+  };
   const SEG_ANGLE = 360 / SEGMENTS.length;
   let spinning = false;
   let wheelRotation = 0;
@@ -74,7 +119,7 @@ DC.views.rewards = (() => {
         <span style="font-size:32px">${ti.tier.emoji}</span>
         <div style="flex:1">
           <b style="font-size:16px">VIP ${ti.tier.name}</b>
-          <div class="tiny muted">${ti.tier.cashback}% cashback on every order</div>
+          <div class="tiny muted">${ti.tier.cashback}% cashback · ×${ti.tier.spinMult} spin payouts · ${D.COUPONS[ti.tier.coupon].pct}% spin coupon</div>
         </div>
         ${ti.next ? `<div style="text-align:right"><div class="tiny muted">next: ${ti.next.emoji} ${ti.next.name}</div><b class="tiny">${U.moneyShort(ti.toNext)} to go</b></div>` : `<b class="tiny" style="color:var(--gold)">MAX TIER 👑</b>`}
       </div>
@@ -140,7 +185,10 @@ DC.views.rewards = (() => {
       <div style="height:8px"></div>
       <button class="btn btn-ghost btn-block" id="skip-spin-btn" data-action="skip-spin" hidden>Skip animation ⏭️</button>
       <button class="btn btn-glass btn-block" id="buy-spin-btn" data-action="buy-spin">Buy a spin · 100 🪙</button>
-      <p class="tiny muted" style="margin-top:10px">Free spin every day, plus one per level-up. Stack as many as you like.</p>
+      <p class="tiny muted" style="margin-top:10px">Free spin every day, plus one per level-up. Stack as many as you like.<br>
+        ${(() => { const t = S.tierInfo().tier; return t.spinMult > 1
+          ? `${t.emoji} ${t.name} perk: payouts ×${t.spinMult}, coupon prize ${D.COUPONS[t.coupon].pct}% off.`
+          : `Higher VIP tiers multiply payouts (up to ×2) and upgrade the coupon prize to 50% off.`; })()}</p>
     </div>
 
     ${UI.section("📦 Mystery Box")}
@@ -176,7 +224,8 @@ DC.views.rewards = (() => {
     spinning = false;
     document.getElementById("skip-spin-btn")?.setAttribute("hidden", "");
     const seg = SEGMENTS[idx];
-    const msg = seg.apply();
+    const reward = segReward(seg);
+    reward.apply();
     // Reset the button here too — the modal's Collect re-render isn't
     // guaranteed (the user can dismiss by tapping the backdrop).
     const sb = document.getElementById("spin-btn");
@@ -189,8 +238,8 @@ DC.views.rewards = (() => {
     U.confetti({ count: 90 });
     UI.modal(`
       <div class="reward-burst">${seg.emoji}</div>
-      <div class="reward-amount">${seg.label === "📦" ? "Mystery Box!" : seg.label}</div>
-      <p class="muted" style="font-size:13.5px;margin-bottom:16px">${msg}</p>
+      <div class="reward-amount">${reward.label}</div>
+      <p class="muted" style="font-size:13.5px;margin-bottom:16px">${reward.msg}</p>
       <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Collect</button>
     `, "dialog", true, () => DC.app.render());
   };

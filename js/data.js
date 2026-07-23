@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.6.2";
+  const VERSION = "1.6.3";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -377,6 +377,11 @@ DC.data = (() => {
     VIP30: { pct: 30, label: "30% off" },
     COMEBACK15: { pct: 15, label: "15% off — welcome back" },
     FREESHIP: { pct: 0, freeShip: true, label: "Free delivery" },
+    // Tier-exclusive codes — the spin wheel hands these out (state.TIERS).
+    ELITE35: { pct: 35, label: "35% off — Silver spin prize" },
+    ROYAL40: { pct: 40, label: "40% off — Gold spin prize" },
+    MYTHIC45: { pct: 45, label: "45% off — Platinum spin prize" },
+    LEGEND50: { pct: 50, label: "50% off — Diamond spin prize" },
   };
 
   /* ── Drivers (for fake deliveries) ──────────────────────── */
@@ -438,6 +443,7 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.6.3", notes: ["Spin payouts now scale with your VIP tier — ×1.25 Silver up to ×2 Diamond on cash, coins and XP (jackpot hits SAR 10,000 at Diamond)", "Tier-exclusive spin coupons: 30% Bronze → 35% Silver → 40% Gold → 45% Platinum → 50% Diamond", "Fixed daily streak: a broken streak now resets to 0 right away (with a heads-up) instead of showing a stale count that silently collapsed on your next claim"] },
     { v: "1.6.2", notes: ["Service worker now revalidates with the server on every fetch — the browser's HTTP cache can never serve stale app files again (fixes stuck old versions on hosts like GitHub Pages)", "New in Settings: Check for Updates — fetches the latest version on demand"] },
     { v: "1.6.1", notes: ["Lucky Spin pays way better: SAR 800 base cash, SAR 5,000 jackpot, up to 150 coins, 250 XP, +2 spins, a 30% coupon — and a new segment that instantly recharges your Mystery Box", "Fixed: skipping a spin and tapping outside the reward dialog left the button stuck on \"Spinning…\"", "Reward dialogs now refresh the screen however you close them"] },
     { v: "1.6.0", notes: ["Daily Quests — 3 rotating goals a day, auto-paying coins & XP (+ bonus spin for the sweep)", "VIP tiers Bronze → Diamond — lifetime spending boosts your cashback up to 20%", "Write your own product reviews (first review per product pays 30 coins)", "Unbox delivered orders for surprise coins & XP", "Frequently Bought Together bundles on every product", "Your Wrapped — a stats page of your fictional shopping year", "Collection gallery — every product you've ever owned, Pokédex style", "DopaBot personal shopper — chat your way to curated picks", "Gift a cart — share a code, import a cart", "DopaFriday — bigger flash sales + 2× XP every Friday", "Price-drop alerts for favorites & cart reminders (code COMEBACK15)"] },

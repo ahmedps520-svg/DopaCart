@@ -134,6 +134,19 @@ DC.store = (() => {
   const todayStr = () => new Date().toDateString();
   const canClaimDaily = () => s.streak.lastClaim !== todayStr();
 
+  // A streak is alive only if the last claim was today or yesterday.
+  // Called on boot: a broken streak resets to 0 immediately so the UI
+  // never shows a dead count that silently collapses on the next claim.
+  const reconcileStreak = () => {
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (s.streak.count > 0 && s.streak.lastClaim !== todayStr() && s.streak.lastClaim !== yesterday) {
+      const lost = s.streak.count;
+      s.streak.count = 0;
+      save();
+      pushNotif("💔", "Streak reset", `Your ${lost}-day streak expired — claim today to start a new one.`, true);
+    }
+  };
+
   const claimDaily = () => {
     if (!canClaimDaily()) return null;
     const yesterday = new Date(Date.now() - 86400000).toDateString();
@@ -459,12 +472,14 @@ DC.store = (() => {
   };
 
   /* ── VIP tiers (lifetime spending) ──────────────────────── */
+  // spinMult scales the wheel's cash/coin/XP payouts; coupon is the
+  // code the wheel's coupon segment hands out at that tier.
   const TIERS = [
-    { id: "bronze", name: "Bronze", emoji: "🥉", at: 0, cashback: 10 },
-    { id: "silver", name: "Silver", emoji: "🥈", at: 25000, cashback: 12 },
-    { id: "gold", name: "Gold", emoji: "🥇", at: 75000, cashback: 14 },
-    { id: "platinum", name: "Platinum", emoji: "💠", at: 150000, cashback: 16 },
-    { id: "diamond", name: "Diamond", emoji: "💎", at: 300000, cashback: 20 },
+    { id: "bronze", name: "Bronze", emoji: "🥉", at: 0, cashback: 10, spinMult: 1, coupon: "VIP30" },
+    { id: "silver", name: "Silver", emoji: "🥈", at: 25000, cashback: 12, spinMult: 1.25, coupon: "ELITE35" },
+    { id: "gold", name: "Gold", emoji: "🥇", at: 75000, cashback: 14, spinMult: 1.5, coupon: "ROYAL40" },
+    { id: "platinum", name: "Platinum", emoji: "💠", at: 150000, cashback: 16, spinMult: 1.75, coupon: "MYTHIC45" },
+    { id: "diamond", name: "Diamond", emoji: "💎", at: 300000, cashback: 20, spinMult: 2, coupon: "LEGEND50" },
   ];
 
   const tierInfo = (spent = s.stats.spent) => {
@@ -584,7 +599,7 @@ DC.store = (() => {
     xpForLevel, levelInfo, levelTitle, LEVEL_TITLES, THEMES,
     pushNotif, unreadNotifs,
     earnCash, spendCash, earnCoins, spendCoins, addXP,
-    canClaimDaily, claimDaily, grantDailySpin, collectAwayEarnings,
+    canClaimDaily, claimDaily, reconcileStreak, grantDailySpin, collectAwayEarnings,
     isFav, toggleFav, bump, topInterests, recordView,
     cartCount, addToCart, setQty, cartItems, cartTotals,
     STAGES, placeOrder, orderProgress, activeOrders, sweepDeliveries,

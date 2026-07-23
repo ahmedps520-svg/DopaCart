@@ -443,6 +443,7 @@ DC.app = (() => {
     } catch (_) { /* storage unavailable — skip the toast */ }
 
     // Welcome-back economy
+    S.reconcileStreak();
     const away = S.collectAwayEarnings();
     if (away > 0) {
       setTimeout(() => U.toast("Welcome back!", `You earned SAR ${away.toLocaleString()} while away 💤`, "💵"), 1400);
