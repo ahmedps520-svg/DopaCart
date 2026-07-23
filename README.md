@@ -20,6 +20,16 @@ mystery boxes, lucky spins, and unlockable themes.
 - **Cart & checkout** — coupons (`DOPA20`, `FREESHIP`, `LUCKY25`…), animated totals, fake receipt + confetti
 - **Live order tracking** — DoorDash-style: six delivery stages, driver card, ETA countdown, and an animated courier moving across a fake map
 - **Rewards** — XP levels, DopaCash, coins, daily streaks, lucky spin wheel, mystery boxes, 14 achievement badges
+- **Daily Quests** — 3 rotating goals a day that auto-pay coins & XP, plus a bonus spin for sweeping all 3
+- **VIP tiers** — Bronze → Diamond from lifetime spending; higher tiers boost cashback up to 20%
+- **Unboxing** — delivered orders hide surprise coins & XP behind a tap
+- **Your reviews** — rate and review any product (first review per product pays 30 coins)
+- **Bundles** — "Frequently bought together" trios on every product page, one-tap add
+- **Wrapped & Collection** — a stats recap of your fictional shopping life, and a Pokédex-style gallery of everything you've owned
+- **DopaBot** — a scripted personal-shopper chat that curates picks by category, budget and vibe
+- **Gift a cart** — export your cart as a code; friends redeem it into theirs
+- **DopaFriday** — every Friday: a doubled flash sale with deeper cuts and 2× order XP
+- **Nudges** — price-drop alerts on favorites and cart-abandonment reminders (with a comeback coupon)
 - **Themes** — 6 accent themes unlocked by leveling up or spending coins
 - **Notifications** — in-app feed + real system notifications (opt-in) for sales, rewards and deliveries
 - **Full PWA** — installable, offline-capable app shell, splash screen, app icons (product photos are hotlinked, so they need a connection; emoji art fills in offline)
