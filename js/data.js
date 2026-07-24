@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.8.1";
+  const VERSION = "1.8.2";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -494,6 +494,7 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "1.8.2", notes: ["Brand new app icon — the dopamine molecule itself, on a violet-to-indigo gradient. A nod to the \"Dopa\" in DopaCart, and nothing else on your home screen looks like it", "Redrawn at every size (home screen, iOS, Android adaptive)", "The plain \"D\" on the splash screen is gone — opening the app now shows the real logo, on the matching violet tile", "Same mark in the About sheet, so the icon, splash and app all finally match"] },
     { v: "1.8.1", notes: ["Every badge now tells you exactly how to unlock it (no more 'keep playing')", "All coupon codes refreshed — new typeable ones: SPLURGE20, GIMME25, DRIP18, FRESH10, FREERIDE (free delivery), MISSU15 (welcome-back). Spin/tier prizes renamed too", "Rebalanced the Lucky Spin: it no longer prints spins or coins faster than you spend them, so the infinite money loop is closed — the wheel dropped its 'win spins' slot, coins are flat (never tier-scaled) and always below the buy price, and spins now cost 150 🪙", "Cash & XP still scale with your VIP tier (up to ×3) — that part stays generous"] },
     { v: "1.8.0", notes: ["3 new categories — 🐾 Pets, 🧸 Toys & Games, 🏕️ Outdoors — 18 new products, all in the Collection", "Levels no longer stop at The Final Boss of Shopping — 10 new titles up to The Shopping Singularity, then prestige stars (★) forever", "3 new VIP tiers above Diamond: ⬛ Obsidian, 🌌 Cosmic, 🕳️ Singularity (up to 30% cashback, ×3 spin payouts, 66% spin coupon)", "8 new badges including Whale, Tycoon, Hoarder and Gotta Buy 'Em All", "Bigger orders now take the courier longer to deliver — a full cart can take up to 15 minutes"] },
     { v: "1.7.4", notes: ["Faster spins — the wheel now settles in 2.6s instead of 4.2s", "⚡ Spin all — burn every spin at once and get one combined haul summary (bonus spins you win stay for the next round)", "Buy max — top up as many spins as your coins allow in a single tap", "App now stays in portrait; turned sideways on a phone, it politely asks you to rotate back"] },

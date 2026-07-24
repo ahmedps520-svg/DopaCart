@@ -153,7 +153,7 @@ DC.views.settings = (() => {
   /* ── Info sheets ────────────────────────────────────────── */
   const showAbout = () => UI.modal(`
     <div style="text-align:center;padding:8px 0 4px">
-      <div class="splash-mark" style="margin:0 auto 14px;width:64px;height:64px;font-size:32px;border-radius:20px">D</div>
+      <div class="splash-mark" style="margin:0 auto 14px;width:64px;height:64px;border-radius:20px">${UI.logoGlyph()}</div>
       <h3>DopaCart</h3>
       <p class="tiny muted">Version ${D.VERSION}</p>
     </div>

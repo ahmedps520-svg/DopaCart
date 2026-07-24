@@ -14,6 +14,22 @@ DC.ui = (() => {
   // data.js now so state/cart math uses the exact same numbers.
   const priceOf = D.priceOf;
 
+  /* ── Brand mark ─────────────────────────────────────────── */
+  // The dopamine-molecule glyph — identical artwork to the app icon,
+  // so the splash, About sheet and home-screen icon all match.
+  const logoGlyph = () => `
+    <svg class="logo-glyph" viewBox="0 0 512 512" aria-hidden="true">
+      <g transform="translate(18,-24)">
+        <g fill="none" stroke="#fff" stroke-width="31" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M330 280L283 361L189 361L142 280L189 199L283 199Z"/>
+          <path d="M283 199L350 152"/>
+          <path d="M189 361L122 408"/>
+        </g>
+        <circle cx="350" cy="152" r="30" fill="#fff"/>
+        <circle cx="122" cy="408" r="30" fill="#fff"/>
+      </g>
+    </svg>`;
+
   /* ── Small pieces ───────────────────────────────────────── */
   const gradStyle = (p) =>
     `background:linear-gradient(140deg,${p.grad[0]},${p.grad[1]})`;
@@ -183,6 +199,7 @@ DC.ui = (() => {
   };
 
   return {
+    logoGlyph,
     priceOf, gradStyle, stars, favBtn, photoHtml,
     productCard, productLine, row, grid, section,
     skRow, skGrid, skHome,
