@@ -296,6 +296,13 @@ DC.app = (() => {
       render();
       U.toast("Sound effects " + (S.s.sound ? "on" : "off"), "", S.s.sound ? "🔊" : "🔇");
     },
+    "toggle-bot": () => {
+      S.s.hideBot = !S.s.hideBot;
+      S.save();
+      applyBotPref();
+      render();
+      U.toast("DopaBot button " + (S.s.hideBot ? "hidden" : "shown"), S.s.hideBot ? "Find it on the Home banner anytime" : "", S.s.hideBot ? "🙈" : "🤖");
+    },
     "set-theme": (el) => DC.views.settings.setTheme(el.dataset.id),
     "buy-theme": (el) => DC.views.settings.buyTheme(el.dataset.id),
     "enable-notifs": () => DC.views.settings.enableNotifs(),
@@ -304,6 +311,9 @@ DC.app = (() => {
     "do-return": (el) => DC.views.settings.doReturn(el.dataset.id),
     "confirm-return": (el) => DC.views.settings.confirmReturn(el.dataset.id),
     "show-complaint": () => DC.views.settings.showComplaint(),
+    "show-tickets": () => DC.views.settings.showTickets(),
+    "open-ticket": (el) => DC.views.settings.showTicket(el.dataset.id),
+    "send-ticket-reply": (el) => DC.views.settings.sendTicketReply(el.dataset.id),
     "complaint-topic": (el) => {
       [...el.parentElement.children].forEach((c) => c.classList.toggle("active", c === el));
       U.haptic(6);
@@ -396,9 +406,10 @@ DC.app = (() => {
       });
     }, 1000);
 
-    // 5s: deliveries + box-ready notification
+    // 5s: deliveries, support tickets + box-ready notification
     setInterval(() => {
       S.sweepDeliveries();
+      S.sweepTickets();
       if (S.boxReady() && !sessionFlags.boxNotified) {
         sessionFlags.boxNotified = true;
         // Only ping if the box became ready a moment ago (not stale on boot).
@@ -450,12 +461,18 @@ DC.app = (() => {
   // remembers the spot (s.fabPos) — auto-roaming stops for good once
   // the user has placed it themselves. The constant bobbing lives in
   // CSS on the inner span so it never fights the positioning.
+  // Show/hide the floating DopaBot button per the user's Settings choice.
+  const applyBotPref = () => {
+    document.getElementById("dopabot-fab")?.classList.toggle("hidden-pref", S.s.hideBot === true);
+  };
+
   const initBotFab = () => {
     const fab = document.createElement("button");
     fab.id = "dopabot-fab";
     fab.setAttribute("aria-label", "Chat with DopaBot");
     fab.innerHTML = `<span class="fab-face">🤖</span><span class="fab-say" hidden></span>`;
     document.body.appendChild(fab);
+    applyBotPref();                                          // honour the hide-bot setting
 
     const face = fab.querySelector(".fab-face");
     const say = fab.querySelector(".fab-say");
@@ -674,5 +691,5 @@ DC.app = (() => {
     boot();
   }
 
-  return { go, back, render, softRender, refreshBadges, showLevelUp, setLevelUpQuiet, promptInstall };
+  return { go, back, render, softRender, refreshBadges, showLevelUp, setLevelUpQuiet, applyBotPref, promptInstall };
 })();

@@ -31,10 +31,12 @@ DC.store = (() => {
     ach: [],                   // unlocked achievement ids
     myReviews: {},             // { productId: { stars, text, ts } }
     qc: null,                  // daily quest counters (rebuilt each day)
+    tickets: [],               // support tickets (with full message thread)
     notifs: [],
     theme: "crimson",
     unlockedThemes: ["crimson"],
     sound: true,
+    hideBot: false,            // hide the floating DopaBot button
   });
 
   /* ── Load / save ────────────────────────────────────────── */
@@ -75,11 +77,19 @@ DC.store = (() => {
   /* ── Themes ─────────────────────────────────────────────── */
   const THEMES = [
     { id: "crimson", name: "Crimson", color: "#ff3b30", unlock: null },
+    { id: "coral", name: "Coral", color: "#ff6f61", unlock: { level: 4 } },
     { id: "ember", name: "Ember", color: "#ff9500", unlock: { level: 3 } },
+    { id: "rose", name: "Rose", color: "#ff2d78", unlock: { coins: 400 } },
+    { id: "bubblegum", name: "Bubblegum", color: "#ff6ec7", unlock: { coins: 1000 } },
     { id: "voltage", name: "Voltage", color: "#bf5af2", unlock: { level: 5 } },
+    { id: "nebula", name: "Nebula", color: "#7c4dff", unlock: { level: 6 } },
+    { id: "grape", name: "Grape", color: "#5e5ce6", unlock: { coins: 800 } },
     { id: "ocean", name: "Ocean", color: "#0a84ff", unlock: { coins: 300 } },
+    { id: "aqua", name: "Aqua", color: "#32ade6", unlock: { coins: 600 } },
     { id: "mint", name: "Mint", color: "#30d158", unlock: { coins: 500 } },
+    { id: "lime", name: "Lime", color: "#a3e635", unlock: { level: 12 } },
     { id: "midas", name: "Midas", color: "#ffd60a", unlock: { level: 10 } },
+    { id: "graphite", name: "Graphite", color: "#b0b0b8", unlock: { level: 15 } },
   ];
 
   const applyTheme = () => { document.body.dataset.theme = s.theme; };
@@ -388,23 +398,117 @@ DC.store = (() => {
     return o;
   };
 
-  // Fake support ticket. Small coin compensation once per day so
-  // complaining stays satisfying but not farmable.
-  const fileComplaint = (text) => {
-    const ticket = "SUP-" + String(10000 + (U.hash(U.uid()) % 90000));
-    let comp = 0;
-    if (s.lastComplaintComp !== todayStr()) {
-      s.lastComplaintComp = todayStr();
-      comp = 50;
-      s.coins += comp;
-    }
+  /* ── Support tickets ────────────────────────────────────────
+     Real, persisted tickets: your message is stored, an agent is
+     assigned, the ticket moves Open → Under review → Resolved over
+     time (driven by sweepTickets from the app ticker), and you can
+     reply to reopen the thread. Compensation is capped at 2 per day
+     so complaining can't be farmed. */
+  const SUPPORT_AGENTS = [
+    { name: "Nadia", ava: "👩‍💼" }, { name: "Faisal", ava: "🧑‍💻" },
+    { name: "Rami", ava: "🧑‍🔧" }, { name: "Layla", ava: "👩‍🚀" },
+    { name: "Yousef", ava: "🕵️" },
+  ];
+
+  const REVIEW_MS = 25000;      // Open → Under review
+  const RESOLVE_MS = 70000;     // Under review → Resolved
+  const REPLY_MS = 20000;       // your follow-up → agent answers
+
+  const REVIEW_LINES = {
+    Order: "I've pulled up the order and I'm going through it line by line. Nothing looks real, which is normal.",
+    Delivery: "I radioed the courier. They blamed traffic. They always blame traffic. Investigating.",
+    App: "Logged with our one (1) fictional engineer. He says it works on his machine. I'm pushing back on your behalf.",
+    Vibes: "Vibes are a serious matter here. I've escalated this to the Department of Vibes.",
+    General: "Thanks for reaching out — I've got this open on my screen right now.",
+  };
+
+  const RESOLVE_LINES = {
+    Order: "Investigation complete: the order was 100% fictional, as designed. I've noted your feedback anyway.",
+    Delivery: "The courier has been spoken to sternly. They apologised to a wall. Closing this one out.",
+    App: "Engineering says it's 'a feature'. I disagree, so I'm siding with you on the record.",
+    Vibes: "Department of Vibes has ruled in your favour. Vibes officially restored.",
+    General: "We looked into it thoroughly. Everything is still fictional. Closing with love. 💙",
+  };
+
+  const ticketByNum = (id) => s.tickets.find((t) => t.id === id);
+  const openTickets = () => s.tickets.filter((t) => t.status !== "resolved");
+
+  const fileComplaint = (topic, text, orderId) => {
+    const h = U.hash(U.uid());
+    const t = {
+      id: U.uid(),
+      num: "SUP-" + String(10000 + (h % 90000)),
+      topic: topic || "General",
+      text,
+      orderId: orderId || null,
+      agent: SUPPORT_AGENTS[h % SUPPORT_AGENTS.length],
+      createdAt: Date.now(),
+      status: "open",
+      comp: null,
+      compGiven: false,
+      nextEventAt: Date.now() + REVIEW_MS,
+      thread: [{ who: "you", text, ts: Date.now() }],
+    };
+    s.tickets.unshift(t);
+    s.tickets = s.tickets.slice(0, 30);
     save();
-    pushNotif("📮", "Complaint received", `Ticket ${ticket} filed.${comp ? ` +${comp} coins for the inconvenience.` : ""}`, true);
-    // The fictional support team "responds" a little later.
-    setTimeout(() => {
-      pushNotif("💬", "Support update", `Ticket ${ticket}: we investigated thoroughly. Everything is fictional. Ticket closed with love. 💙`);
-    }, 45000);
-    return { ticket, comp };
+    pushNotif("📮", `Ticket ${t.num} opened`, `${t.agent.name} from fictional support has picked it up.`, true);
+    DC.app?.refreshBadges?.();
+    return t;
+  };
+
+  // Goodwill gesture on resolution — max 2 per calendar day.
+  const grantCompensation = (t) => {
+    if (t.compGiven) return t.comp;
+    t.compGiven = true;
+    if (s.compDay !== todayStr()) { s.compDay = todayStr(); s.compCount = 0; }
+    if ((s.compCount || 0) >= 2) return null;
+    s.compCount = (s.compCount || 0) + 1;
+    const h = U.hash(t.id);
+    // A complaint tied to a real order gets a bigger gesture.
+    if (t.orderId) {
+      const coins = 60 + (h % 4) * 10;
+      s.coins += coins;
+      return { coins, code: "MISSU15", label: `+${coins} coins + code MISSU15` };
+    }
+    const coins = 30 + (h % 4) * 10;
+    s.coins += coins;
+    return { coins, label: `+${coins} coins for your trouble` };
+  };
+
+  const replyToTicket = (id, text) => {
+    const t = ticketByNum(id);
+    if (!t || !text) return null;
+    t.thread.push({ who: "you", text, ts: Date.now() });
+    t.status = "review";                       // reopens a resolved ticket
+    t.nextEventAt = Date.now() + REPLY_MS;
+    save();
+    DC.app?.refreshBadges?.();
+    return t;
+  };
+
+  // Called by the app ticker — advances tickets and posts agent replies.
+  const sweepTickets = () => {
+    let changed = false;
+    s.tickets.forEach((t) => {
+      if (!t.nextEventAt || Date.now() < t.nextEventAt) return;
+      if (t.status === "open") {
+        t.status = "review";
+        t.thread.push({ who: "support", text: REVIEW_LINES[t.topic] || REVIEW_LINES.General, ts: Date.now() });
+        t.nextEventAt = Date.now() + RESOLVE_MS;
+        changed = true;
+        pushNotif("💬", `${t.agent.name} replied`, `${t.num} is now under review.`);
+      } else {
+        t.status = "resolved";
+        t.comp = grantCompensation(t) || t.comp;
+        const line = RESOLVE_LINES[t.topic] || RESOLVE_LINES.General;
+        t.thread.push({ who: "support", text: line + (t.comp ? ` I've added ${t.comp.label} to your account.` : ""), ts: Date.now() });
+        t.nextEventAt = null;
+        changed = true;
+        pushNotif("✅", `${t.num} resolved`, t.comp ? t.comp.label : "Closed with love. 💙");
+      }
+    });
+    if (changed) { save(); DC.app?.refreshBadges?.(); }
   };
 
   /* ── Mystery box + spins ────────────────────────────────── */
@@ -635,7 +739,8 @@ DC.store = (() => {
     isFav, toggleFav, bump, topInterests, recordView,
     cartCount, addToCart, setQty, cartItems, cartTotals,
     STAGES, placeOrder, orderProgress, activeOrders, sweepDeliveries,
-    returnableOrders, returnOrder, fileComplaint,
+    returnableOrders, returnOrder,
+    fileComplaint, replyToTicket, sweepTickets, ticketByNum, openTickets,
     boxReady, openBox, useSpin,
     QUESTS, todayQuests, questProgress, questBump,
     TIERS, tierInfo,

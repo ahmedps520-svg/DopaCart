@@ -45,6 +45,11 @@ DC.views.settings = (() => {
         <span class="s-v">${S.s.sound !== false ? "On" : "Off"}</span>
         <span class="s-arrow">›</span>
       </button>
+      <button class="set-row" data-action="toggle-bot">
+        <span class="s-e">🤖</span><span class="s-t">DopaBot Button</span>
+        <span class="s-v">${S.s.hideBot ? "Hidden" : "Shown"}</span>
+        <span class="s-arrow">›</span>
+      </button>
       <button class="set-row" data-action="enable-notifs">
         <span class="s-e">🔔</span><span class="s-t">Notifications</span>
         <span class="s-v">${notifState === "granted" ? "On" : notifState === "denied" ? "Blocked" : notifState === "unsupported" ? "N/A" : "Enable"}</span>
@@ -65,6 +70,11 @@ DC.views.settings = (() => {
       </button>
       <button class="set-row" data-action="show-complaint">
         <span class="s-e">📮</span><span class="s-t">File a Complaint</span><span class="s-arrow">›</span>
+      </button>
+      <button class="set-row" data-action="show-tickets">
+        <span class="s-e">🎫</span><span class="s-t">My Tickets</span>
+        <span class="s-v">${S.openTickets().length ? S.openTickets().length + " open" : S.s.tickets.length + " total"}</span>
+        <span class="s-arrow">›</span>
       </button>
     </div>
 
@@ -249,18 +259,25 @@ DC.views.settings = (() => {
   };
 
   const showComplaint = () => {
+    const recent = S.s.orders.slice(0, 6);
     UI.modal(`
       <h3 style="text-align:center;margin-bottom:4px">📮 File a Complaint</h3>
-      <p class="center tiny muted" style="margin-bottom:14px">Our fictional support team takes every complaint very seriously, then closes it lovingly.</p>
+      <p class="center tiny muted" style="margin-bottom:14px">A real ticket, a real agent, a real thread you can reply to. The problem is still fictional.</p>
       <div class="chip-row" id="complaint-topic">
         ${["Order", "Delivery", "App", "Vibes"].map((t, i) => `
           <button class="chip ${i === 0 ? "active" : ""}" data-action="complaint-topic" data-id="${t}">${t}</button>`).join("")}
       </div>
+      ${recent.length ? `
+        <div class="tiny muted" style="margin:10px 0 5px 4px">Attach an order (optional)</div>
+        <select class="field" id="complaint-order">
+          <option value="">No specific order</option>
+          ${recent.map((o) => `<option value="${o.id}">${o.num} · ${U.money(o.totals.total)}</option>`).join("")}
+        </select>` : ""}
       <textarea class="field" id="complaint-text" rows="4" maxlength="500"
-        placeholder="Tell us everything. The courier looked at you funny? We're on it." style="resize:none;margin-top:4px"></textarea>
+        placeholder="Tell us everything. The courier looked at you funny? We're on it." style="resize:none;margin-top:10px"></textarea>
       <div class="spacer"></div>
       <button class="btn btn-primary btn-block" data-action="submit-complaint">Submit Complaint</button>
-      <p class="center tiny muted" style="margin-top:10px">First complaint of the day earns 50 coins for your troubles. 🪙</p>`);
+      <p class="center tiny muted" style="margin-top:10px">Attaching an order gets you a bigger goodwill gesture. 🪙</p>`);
   };
 
   const submitComplaint = () => {
@@ -275,18 +292,75 @@ DC.views.settings = (() => {
       return;
     }
     const topic = document.querySelector("#complaint-topic .chip.active")?.dataset.id || "General";
-    const { ticket, comp } = S.fileComplaint(`[${topic}] ${text}`);
+    const orderId = document.getElementById("complaint-order")?.value || null;
+    const t = S.fileComplaint(topic, text, orderId);
     U.haptic([15, 30, 15]);
     DC.sound.play("chime");
+    DC.app.render();
+    showTicket(t.id);
+  };
+
+  /* ── Ticket list + thread ───────────────────────────────── */
+  const STATUS = {
+    open: { label: "Open", color: "var(--gold)" },
+    review: { label: "Under review", color: "var(--blue)" },
+    resolved: { label: "Resolved", color: "var(--green)" },
+  };
+
+  const showTickets = () => {
+    const list = S.s.tickets;
     UI.modal(`
-      <div class="reward-burst">📮</div>
-      <h3 style="margin:6px 0 2px">Complaint filed!</h3>
-      <div class="reward-amount" style="font-size:22px">Ticket ${ticket}</div>
-      <p class="muted" style="font-size:13.5px;margin-bottom:16px">
-        ${comp ? `+${comp} coins for the inconvenience. ` : ""}A fictional agent will pretend to review it shortly.
+      <h3 style="text-align:center;margin-bottom:4px">🎫 My Tickets</h3>
+      <p class="center tiny muted" style="margin-bottom:14px">${S.openTickets().length} open · ${list.length} total</p>
+      ${list.length ? list.map((t, i) => `
+        <button class="notif-item" style="width:100%;text-align:left;animation-delay:${i * 0.04}s"
+          data-action="open-ticket" data-id="${t.id}">
+          <span class="n-e">${t.agent.ava}</span>
+          <div style="flex:1;min-width:0">
+            <div class="n-t">${t.num} · ${t.topic}</div>
+            <div class="n-m" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${U.esc(t.text)}</div>
+            <div class="n-time">${U.timeAgo(t.createdAt)} · ${t.thread.length} message${t.thread.length === 1 ? "" : "s"}</div>
+          </div>
+          <span class="ticket-status" style="color:${STATUS[t.status].color}">${STATUS[t.status].label}</span>
+        </button>`).join("")
+        : `<div class="empty-state" style="padding:26px"><div class="emoji">🎫</div><h3>No tickets yet</h3><p>Nothing has gone fictionally wrong. Yet.</p></div>`}
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-block" data-action="show-complaint">📮 File a new complaint</button>`);
+  };
+
+  const showTicket = (id) => {
+    const t = S.ticketByNum(id);
+    if (!t) return;
+    const order = t.orderId ? S.s.orders.find((o) => o.id === t.orderId) : null;
+    UI.modal(`
+      <h3 style="text-align:center;margin-bottom:2px">${t.num}</h3>
+      <p class="center tiny muted" style="margin-bottom:12px">
+        ${t.topic} · <b style="color:${STATUS[t.status].color}">${STATUS[t.status].label}</b> · agent ${t.agent.ava} ${t.agent.name}
+        ${order ? `<br>Regarding order ${order.num} · ${U.money(order.totals.total)}` : ""}
       </p>
-      <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Feel heard</button>
-    `, "dialog");
+      <div class="bot-chat" style="max-height:46vh;overflow-y:auto">
+        ${t.thread.map((m) => m.who === "you"
+          ? `<div class="bot-msg me"><span class="bot-bubble">${U.esc(m.text)}</span></div>`
+          : `<div class="bot-msg bot"><span class="bot-ava">${t.agent.ava}</span><span class="bot-bubble">${U.esc(m.text)}</span></div>`).join("")}
+        ${t.status !== "resolved" ? `<div class="bot-msg bot"><span class="bot-ava">${t.agent.ava}</span><span class="bot-bubble"><span class="typing-dots"><i></i><i></i><i></i></span></span></div>` : ""}
+      </div>
+      ${t.comp ? `<p class="center tiny" style="color:var(--green);font-weight:700;margin-top:10px">🎁 Goodwill applied: ${t.comp.label}</p>` : ""}
+      <div class="bot-input-row" style="margin-top:12px">
+        <input class="field" id="ticket-reply" placeholder="Reply to ${t.agent.name}…" autocomplete="off">
+        <button class="btn btn-primary bot-send" data-action="send-ticket-reply" data-id="${t.id}" aria-label="Send">➤</button>
+      </div>
+      <div style="height:8px"></div>
+      <button class="btn btn-glass btn-block" data-action="show-tickets">← All tickets</button>`);
+  };
+
+  const sendTicketReply = (id) => {
+    const input = document.getElementById("ticket-reply");
+    const text = (input?.value || "").trim();
+    if (!text) return;
+    S.replyToTicket(id, text);
+    U.haptic(10);
+    DC.sound.play("pop");
+    showTicket(id);                                  // re-render the thread
   };
 
   /* ── Data management ────────────────────────────────────── */
@@ -395,6 +469,7 @@ DC.views.settings = (() => {
     html, setTheme, buyTheme,
     showAbout, showChangelog, showPrivacy, showCredits,
     showReturns, doReturn, confirmReturn, showComplaint, submitComplaint,
+    showTickets, showTicket, sendTicketReply,
     exportData, importData, clearData, confirmClear, enableNotifs, checkUpdates,
   };
 })();
