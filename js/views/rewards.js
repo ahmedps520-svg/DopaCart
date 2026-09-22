@@ -127,8 +127,12 @@ DC.views.rewards = (() => {
     </div>
 
     <div class="wallet-row">
-      <div class="wallet-card glass"><div class="e">💵</div><div class="v">${U.money(S.s.cash)}</div><div class="k">DopaCash</div></div>
-      <div class="wallet-card glass"><div class="e">🪙</div><div class="v">${S.s.coins.toLocaleString()}</div><div class="k">Coins</div></div>
+      <div class="wallet-card glass"><div class="e">💵</div>
+        <div class="v" data-tween="cash" data-tween-fmt="money" data-tween-value="${S.s.cash}">${U.money(S.s.cash)}</div>
+        <div class="k">DopaCash</div></div>
+      <div class="wallet-card glass"><div class="e">🪙</div>
+        <div class="v" data-tween="coins" data-tween-value="${S.s.coins}">${S.s.coins.toLocaleString()}</div>
+        <div class="k">Coins</div></div>
     </div>
 
     ${(() => {
@@ -278,7 +282,7 @@ DC.views.rewards = (() => {
       <div class="reward-amount">${reward.label}</div>
       <p class="muted" style="font-size:13.5px;margin-bottom:16px">${reward.msg}</p>
       <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Collect</button>
-    `, "dialog", true, () => DC.app.render());
+    `, "dialog", true, () => DC.app.renderWithTween());
   };
 
   const spin = () => {
@@ -368,7 +372,7 @@ DC.views.rewards = (() => {
         <div style="display:flex;flex-direction:column;gap:9px;text-align:left;margin-bottom:4px">${rows.join("")}</div>
         <div style="height:14px"></div>
         <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Collect it all 🤑</button>
-      `, "dialog", true, () => DC.app.render());
+      `, "dialog", true, () => DC.app.renderWithTween());
     }, 1200);
   };
 
@@ -443,7 +447,7 @@ DC.views.rewards = (() => {
         <div class="reward-amount">${got.t}</div>
         <p class="tiny muted" style="margin-bottom:16px">Next box unlocks in 4 hours.</p>
         <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Nice!</button>
-      `, "dialog", true, () => DC.app.render());
+      `, "dialog", true, () => DC.app.renderWithTween());
     }, 750);
   };
 

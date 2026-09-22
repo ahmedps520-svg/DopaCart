@@ -87,6 +87,16 @@ DC.app = (() => {
     window.scrollTo(0, y);
   };
 
+  /* Re-render, then roll any wallet number up from what the screen was
+     showing a moment ago. Reward flows use this instead of render() so
+     a payout is something you watch land, not something already there
+     when the dialog closes. */
+  const renderWithTween = () => {
+    const prev = U.captureWallet();       // read the OLD on-screen values
+    render();
+    U.tweenWallet(prev);
+  };
+
   /* Play the exit animation, then swap. The .view-leaving rule existed
      in the stylesheet from the start but nothing ever applied it, so
      every navigation used to cut straight to the new screen. */
@@ -138,7 +148,7 @@ DC.app = (() => {
         <div class="reward-amount" style="font-size:22px">${S.levelTitle(level)}</div>
         <p class="tiny muted" style="margin-bottom:16px">+SAR ${400 * level} · +${25 * level} coins · +1 spin 🎡</p>
         <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Let's go</button>
-      `, "dialog", true, () => DC.app.render());
+      `, "dialog", true, () => DC.app.renderWithTween());
     };
     attempt(12);
   };
@@ -156,7 +166,7 @@ DC.app = (() => {
       <div class="reward-amount">+SAR ${r.cash.toLocaleString()}</div>
       <p class="muted" style="font-size:13.5px;margin-bottom:16px">+${r.coins} coins · +50 XP<br>Streak bonus grows every day.</p>
       <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Claim 🎉</button>
-    `, "dialog", true, () => DC.app.render());
+    `, "dialog", true, () => DC.app.renderWithTween());
     S.pushNotif("🎁", "Daily reward claimed", `Day ${r.streak} — SAR ${r.cash} + ${r.coins} coins`, true);
   };
 
@@ -199,7 +209,7 @@ DC.app = (() => {
       <div class="reward-amount">+${r.coins} coins 🪙</div>
       <p class="muted" style="font-size:13.5px;margin-bottom:16px">+${r.xp} XP · The packing peanuts were fictional but the joy is real.</p>
       <button class="btn btn-primary btn-block" data-action="close-modal-rerender">Love it</button>
-    `, "dialog", true, () => DC.app.render());
+    `, "dialog", true, () => DC.app.renderWithTween());
   };
 
   const openFlashSheet = () => {
@@ -387,7 +397,9 @@ DC.app = (() => {
 
     "close-modal": () => UI.closeModal(),
     "close-modal-home": () => { UI.closeModal(); go("home"); },
-    "close-modal-rerender": () => { UI.closeModal(); render(); },
+    // Reward dialogs close through here — the wallet rolls up to its
+    // new total instead of just appearing at it.
+    "close-modal-rerender": () => { UI.closeModal(); renderWithTween(); },
     "modal-goto": (el) => { UI.closeModal(); go(el.dataset.route); },
   };
 
@@ -751,5 +763,5 @@ DC.app = (() => {
     boot();
   }
 
-  return { go, back, render, softRender, refreshBadges, showLevelUp, setLevelUpQuiet, applyBotPref, promptInstall };
+  return { go, back, render, softRender, renderWithTween, refreshBadges, showLevelUp, setLevelUpQuiet, applyBotPref, promptInstall };
 })();

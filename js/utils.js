@@ -119,6 +119,50 @@ DC.util = (() => {
     setTimeout(kill, ms);
   };
 
+  /* ── Count-up tween ─────────────────────────────────────────
+     Watching SAR 12,400 roll up to 13,600 lands far harder than the
+     number simply being there on the next render. Used for wallet
+     balances, coins and XP after any reward. */
+  const tweenNumber = (el, from, to, fmt, dur = 900) => {
+    if (!el || from === to) return;
+    const format = fmt || ((n) => Math.round(n).toLocaleString());
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      el.textContent = format(to);
+      return;
+    }
+    const t0 = performance.now();
+    const step = (t) => {
+      const k = Math.min((t - t0) / dur, 1);
+      const eased = 1 - Math.pow(1 - k, 3);
+      el.textContent = format(from + (to - from) * eased);
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+
+  /* Snapshot what the [data-tween] elements are CURRENTLY showing, so
+     the next render can roll up from there. Call before re-rendering. */
+  const captureWallet = () => {
+    const snap = {};
+    document.querySelectorAll("[data-tween]").forEach((el) => {
+      const v = Number(el.dataset.tweenValue);
+      if (Number.isFinite(v)) snap[el.dataset.tween] = v;
+    });
+    return snap;
+  };
+
+  /* Roll every [data-tween] element from its snapshotted value up to
+     the one just rendered. */
+  const tweenWallet = (prev) => {
+    if (!prev) return;
+    document.querySelectorAll("[data-tween]").forEach((el) => {
+      const to = Number(el.dataset.tweenValue);
+      const from = prev[el.dataset.tween];
+      if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) return;
+      tweenNumber(el, from, to, el.dataset.tweenFmt === "money" ? money : undefined);
+    });
+  };
+
   /* ── Floating "+XP" text near a tapped element ──────────── */
 
   const floatText = (text, x, y, color) => {
@@ -216,7 +260,7 @@ DC.util = (() => {
   return {
     money, moneyShort, num, esc, timeAgo, clamp, uid,
     hash, seededRand, daySeed, pickSeeded,
-    haptic, toast, floatText, confetti,
+    haptic, toast, floatText, confetti, tweenNumber, captureWallet, tweenWallet,
     untilMidnight, fmtCountdown, fmtMins,
   };
 })();
