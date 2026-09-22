@@ -10,7 +10,7 @@
 DC.data = (() => {
   const { hash, seededRand, daySeed, pickSeeded } = DC.util;
 
-  const VERSION = "1.9.1";
+  const VERSION = "2.0.0";
 
   /* Image URL helpers */
   const un = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`;
@@ -45,7 +45,7 @@ DC.data = (() => {
       id: "apple", name: "Apple", emoji: "🍎", tagline: "The whole ecosystem",
       grad: ["#17171c", "#7d7d88"],
       pal: [["#1a1a20", "#5c5c66"], ["#101828", "#3a6ea8"], ["#221a10", "#a08850"], ["#1a2420", "#4a8a70"]],
-      subs: ["iPhone", "iPad", "Mac", "Watch", "Vision", "Audio", "Accessories"],
+      subs: ["iPhone", "iPad", "Mac", "Watch", "Vision", "Audio", "TV & Home", "Accessories"],
       boiler: "Straight from the fictional Apple Store — pick your storage and size, skip the queue.",
     },
     {
@@ -160,6 +160,12 @@ DC.data = (() => {
       ["Birkenstock Arizona", 449, "🩴", "Shoes", ["hot"], "Cork soles that mold to your feet. Comfort so real it transcends the fiction.", un("1603487742131-4160ec999306")],
     ],
     apple: [
+      ["iPhone 18 Pro Max", 5799, "📱", "iPhone", ["new", "hot"], "The newest, biggest Pro Max. Somehow even more camera than last year.", ap("v/iphone-18-pro/b/images/meta/iphone-18-pro_overview__bl9no3txkonm_og.png"), null,
+        { Color: [["Cosmic Orange", 0], ["Deep Blue", 0], ["Silver", 0], ["Space Black", 0]], Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400], ["2TB", 3200]] }],
+      ["iPhone 18 Pro", 4999, "📱", "iPhone", ["new", "bestseller"], "Pro everything in the pocketable size. The one most people actually want.", ap("v/iphone-18-pro/b/images/meta/iphone-18-pro_overview__bl9no3txkonm_og.png"), null,
+        { Color: [["Cosmic Orange", 0], ["Deep Blue", 0], ["Silver", 0], ["Space Black", 0]], Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400]] }],
+      ["iPhone 17e", 2699, "📱", "iPhone", ["new"], "The affordable one that refuses to feel affordable. Same chip, smaller bill.", ap("v/iphone-17e/e/images/meta/iphone17e_overview__b9tcq8ttub9e_og.png"), null,
+        { Color: [["Black", 0], ["White", 0]], Storage: [["128GB", 0], ["256GB", 350], ["512GB", 750]] }],
       ["iPhone 17 Pro Max", 5399, "📱", "iPhone", ["hot", "bestseller"], "The biggest, longest-lasting iPhone ever made. Your pocket will adjust.", ap("v/iphone-17-pro/g/images/meta/iphone-17-pro_overview__eumhhclcpuaa_og.png"), null,
         { Color: [["Cosmic Orange", 0], ["Deep Blue", 0], ["Silver", 0]], Storage: [["256GB", 0], ["512GB", 500], ["1TB", 1400], ["2TB", 3200]] }],
       ["iPhone 17 Pro", 4699, "📱", "iPhone", ["trending"], "Pro cameras, pro chip, pro everything — minus the Max wingspan.", ap("v/iphone-17-pro/g/images/meta/iphone-17-pro_overview__eumhhclcpuaa_og.png"), null,
@@ -182,12 +188,17 @@ DC.data = (() => {
         { Color: [["Sky Blue", 0], ["Midnight", 0], ["Starlight", 0], ["Silver", 0]], Size: [["13-inch", 0], ["15-inch", 800]], Storage: [["256GB", 0], ["512GB", 800], ["1TB", 1600]] }],
       ["MacBook Pro", 6999, "💻", "Mac", ["staff"], "The one the pros actually use. Battery life measured in workdays, not hours.", ap("v/macbook-pro/ax/images/meta/macbook-pro__difvbgz1plsi_og.png"), null,
         { Color: [["Space Black", 0], ["Silver", 0]], Size: [["14-inch", 0], ["16-inch", 2000]], Storage: [["512GB", 0], ["1TB", 800], ["2TB", 2400]] }],
+      ["Apple Watch Series 12", 1799, "⌚", "Watch", ["new", "hot"], "Thinner, brighter, and even more insistent that you stand up right now.", ap("v/apple-watch-series-12/a/images/meta/apple-watch-series-12__ep17epp8v16q_og.png"), null,
+        { Color: [["Jet Black", 0], ["Silver", 0], ["Rose Gold", 0], ["Space Gray", 0]], Size: [["42mm", 0], ["46mm", 130]] }],
+      ["Apple Watch Ultra 4", 3599, "⌚", "Watch", ["new"], "Titanium, satellite, and dive-rated. Your commute has never been safer.", ap("v/apple-watch-ultra-4/a/images/meta/apple-watch-ultra-4__bzmdvy2wwb2a_og.png"), null,
+        { Color: [["Natural Titanium", 0], ["Black Titanium", 0]] }],
       ["Apple Watch Series 11", 1699, "⌚", "Watch", ["trending"], "Closes your rings, reads your heart, and politely tells you to stand up.", ap("v/apple-watch-series-11/c/images/meta/apple-watch-series-11__cim89z1i9spe_og.png"), null,
         { Color: [["Jet Black", 0], ["Silver", 0], ["Rose Gold", 0], ["Space Gray", 0]], Size: [["42mm", 0], ["46mm", 130]] }],
       ["Apple Watch Ultra 3", 3399, "⌚", "Watch", ["hot"], "Built for oceans and mountains. Worn mostly to meetings. No judgment.", ap("v/apple-watch-ultra-3/b/images/meta/apple-watch-ultra-3__y7lxayrwmlem_og.png"), null,
         { Color: [["Natural Titanium", 0], ["Black Titanium", 0]] }],
       ["Apple Watch SE 3", 999, "⌚", "Watch", ["new"], "The essentials on your wrist without the flagship price tag.", ap("v/apple-watch-se-3/b/images/meta/apple-watch-se-3__d0wwc67lzg02_og.png"), null,
         { Color: [["Midnight", 0], ["Starlight", 0]], Size: [["40mm", 0], ["44mm", 120]] }],
+      ["AirPods 5", 799, "🎵", "Audio", ["new", "hot"], "Open-ear comfort with noise cancellation that shouldn't be possible at this size.", ap("v/airpods-5/b/images/meta/airpods-5__bwo9ith0md42_og.png")],
       ["AirPods Pro 3", 999, "🎵", "Audio", ["bestseller"], "Noise cancellation strong enough to mute an entire open office.", ap("v/airpods-pro/s/images/meta/og__c0ceegchesom_overview.png")],
       ["AirPods Max 2", 2299, "🎧", "Audio", [], "Over-ear luxury with a carrying case nobody understands. Sounds incredible though.", ap("v/airpods-max/k/images/meta/airpods-max_overview__c2mz40a3bugm_og.png"), null,
         { Color: [["Midnight", 0], ["Starlight", 0], ["Blue", 0], ["Purple", 0], ["Orange", 0]] }],
@@ -195,6 +206,21 @@ DC.data = (() => {
       ["HomePod mini", 449, "🔮", "Accessories", [], "A grapefruit-sized speaker that runs your whole imaginary smart home.", ap("v/homepod-mini/j/images/meta/homepod-mini__bnxwvz5xrtpy_og.png"), null,
         { Color: [["White", 0], ["Midnight", 0], ["Blue", 0], ["Orange", 0], ["Yellow", 0]] }],
       ["Apple Studio Display", 6499, "🖥️", "Mac", ["staff"], "5K glass so sharp you'll see pixels in your dreams. Speakers hiding a whole cinema.", ap("v/studio-display/f/images/meta/studio-display_overview__cc7vair07fjm_og.png")],
+      ["iMac", 5499, "🖥️", "Mac", ["new"], "A whole computer hiding behind 4.5K of color. Comes in colors your desk deserves.", ap("v/imac/w/images/meta/imac__d7trotporb6u_og.png"), null,
+        { Color: [["Blue", 0], ["Purple", 0], ["Pink", 0], ["Orange", 0], ["Green", 0], ["Silver", 0]], Storage: [["256GB", 0], ["512GB", 800], ["1TB", 1600]] }],
+      ["Mac mini", 2699, "📦", "Mac", ["bestseller", "new"], "Desktop power the size of a sandwich. Hides behind the monitor and never complains.", ap("v/mac-mini/ab/images/meta/mac-mini__dvce2jrm11w2_og.jpg"), null,
+        { Storage: [["256GB", 0], ["512GB", 700], ["1TB", 1500], ["2TB", 3000]] }],
+      ["Mac Studio", 8999, "🖥️", "Mac", ["new", "limited"], "Unreasonable power in a small aluminium cube. Renders while you blink.", ap("v/mac-studio/o/images/meta/mac-studio_overview__eedzbosm1t26_og.png"), null,
+        { Storage: [["512GB", 0], ["1TB", 900], ["2TB", 2500], ["4TB", 5500]] }],
+      ["Studio Display XDR", 13999, "🖥️", "Mac", ["limited"], "Reference-grade XDR brightness. Your spreadsheets have never looked so cinematic.", ap("v/studio-display-xdr/b/images/meta/studio_display_xdr__dvvwjvcv36uu_og.png"), null,
+        { Stand: [["Tilt Stand", 0], ["Tilt & Height Stand", 1800], ["VESA Mount", 0]] }],
+      ["Apple TV 4K", 749, "📺", "TV & Home", ["new", "trending"], "The little black box that finally makes your TV's own software irrelevant.", ap("v/apple-tv-4k/am/images/meta/apple-tv-4k__efpszaiqoh2e_og.png"), null,
+        { Storage: [["64GB", 0], ["128GB", 200]] }],
+      ["HomePod (2nd gen)", 1299, "🔊", "TV & Home", ["new"], "Room-filling sound that maps your room and adjusts. Siri lives here now.", ap("v/homepod-2nd-generation/b/images/meta/homepod__dlwt789yhxme_og.png"), null,
+        { Color: [["Midnight", 0], ["White", 0]] }],
+      ["Apple Pencil Pro", 549, "✏️", "Accessories", ["new", "trending"], "Squeeze, roll, hover. Your handwriting is still the weak link.", ap("v/apple-pencil/ag/images/meta/apple-pencil__e54ff7ft4f0i_og.png")],
+      ["Magic Keyboard for iPad Pro", 1399, "⌨️", "Accessories", ["new"], "Turns the iPad into a laptop, right up until you remember it isn't one.", ap("v/ipad-keyboards/q/images/meta/ipad-keyboards__bbzw0w4e2daq_og.png"), null,
+        { Size: [["11-inch", 0], ["13-inch", 300]], Color: [["Black", 0], ["White", 0]] }],
     ],
     tech: [
       ["Samsung Galaxy Tab S9", 2999, "📲", "Mobile", [], "Laptop power, couch energy. The S Pen attaches magnetically and vanishes mysteriously.", un("1544244015-0df4b3ffc6b0")],
@@ -494,6 +520,21 @@ DC.data = (() => {
 
   /* ── Changelog (settings screen) ────────────────────────── */
   const CHANGELOG = [
+    { v: "2.0.0", notes: [
+      "Real checkout — a proper 4-step flow: Address → Shipping → Payment → Review, with a progress stepper you can tap back through",
+      "Your own delivery addresses: add, edit, delete and pick a default (name, street, district, city, phone, delivery note). Orders now ship where you actually said — the old app invented a random address behind your back",
+      "Three shipping speeds with real fees and delivery estimates: 🚚 Standard (free over SAR 200), ⚡ Express (free over 600, ~2× faster), 🚀 Priority (free over 1,500, fastest). Faster shipping genuinely shortens the courier's trip",
+      "Apple Pay-style payment sheet — double-click to confirm, Face-ID-style scan, then a green tick. It's a prop: there is no card field anywhere in this app and nothing leaves your device",
+      "Also pay with DopaPay™ or Cash on Delivery (SAR 20 handling)",
+      "\"Add SAR X for free delivery\" progress bar in the cart",
+      "Orders now carry a carrier, a real tracking number and 7 tracked stages (picking, packed, labelled, picked up…) instead of 6",
+      "New Apple products: iPhone 18 Pro Max, 18 Pro, 17e, Apple Watch Series 12 & Ultra 4, AirPods 5, iMac, Mac mini, Mac Studio, Studio Display XDR, Apple TV 4K, HomePod, Apple Pencil Pro and the Magic Keyboard — all with official images",
+      "Fixed the return exploit: refunds now reverse the cashback, coins and XP that order paid, so buy-unbox-return is no longer an infinite money printer",
+      "Fixed favorite/add-to-cart XP farming (XP is now first-time-only, like product views)",
+      "Fixed: spins and mystery boxes now pay out the instant you tap, so closing the app mid-animation can't eat your prize",
+      "Fixed: the cart's + button respects stock, importing a broken save can no longer corrupt the app, and the Orders list no longer freezes at 99% on your last delivery",
+      "Lots of animation polish — springier buttons, a cart bounce when items land, smoother cart removals, a wheel that rocks into place, working screen transitions, and proper support for Reduce Motion",
+    ] },
     { v: "1.9.1", notes: ["8 new themes — Coral, Rose, Bubblegum, Nebula, Grape, Aqua, Lime and Graphite (14 total), unlocked by leveling up or spending coins", "New setting: hide the floating DopaBot button (Settings → DopaBot Button). It's still reachable from the Home banner if you want it"] },
     { v: "1.9.0", notes: ["Complaints are now real support tickets — your message is saved, an agent is assigned by name, and the ticket moves Open → Under review → Resolved on its own", "New \"My Tickets\" in Settings: browse every ticket, open the full message thread, and reply to reopen it — the agent writes back", "Attach a specific order to a complaint for a bigger goodwill gesture", "Agents reply differently depending on whether you complain about an order, delivery, the app, or the vibes", "Goodwill payouts are capped at 2 a day so complaining stays fun, not farmable"] },
     { v: "1.8.2", notes: ["Brand new app icon — the dopamine molecule itself, on a violet-to-indigo gradient. A nod to the \"Dopa\" in DopaCart, and nothing else on your home screen looks like it", "Redrawn at every size (home screen, iOS, Android adaptive)", "The plain \"D\" on the splash screen is gone — opening the app now shows the real logo, on the matching violet tile", "Same mark in the About sheet, so the icon, splash and app all finally match"] },

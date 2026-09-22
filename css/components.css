@@ -197,13 +197,10 @@
 .prod-card:active { transform: scale(0.955); }
 @keyframes card-in { from { opacity: 0; transform: translateY(16px) scale(0.97); } }
 
-/* stagger children */
-.prod-grid .prod-card:nth-child(2n) { animation-delay: 0.06s; }
-.prod-grid .prod-card:nth-child(3) { animation-delay: 0.1s; }
-.prod-grid .prod-card:nth-child(4) { animation-delay: 0.14s; }
-.prod-row .prod-card:nth-child(2) { animation-delay: 0.06s; }
-.prod-row .prod-card:nth-child(3) { animation-delay: 0.12s; }
-.prod-row .prod-card:nth-child(4) { animation-delay: 0.18s; }
+/* Stagger comes from an inline --i set where the cards are built, so a
+   12-card grid still enters in order. The old nth-child rules only
+   covered the first four, which made card 5 pop in before card 4. */
+.prod-card { animation-delay: calc(min(var(--i, 0) * 0.045s, 0.4s)); }
 
 .p-img {
   height: 118px;
@@ -387,7 +384,7 @@
   font-size: 26px;
   border: 2px solid transparent;
   opacity: 0.65;
-  transition: all 0.2s ease;
+  transition: transform 0.2s var(--ease-spring), border-color 0.2s ease, opacity 0.2s ease;
 }
 .pd-thumb.active { border-color: var(--accent); opacity: 1; transform: scale(1.05); }
 
@@ -504,9 +501,21 @@
   margin-bottom: 10px;
   align-items: center;
   animation: card-in 0.35s var(--ease-out) backwards;
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  overflow: hidden;
+  transition: opacity 0.25s ease, transform 0.25s ease,
+    height 0.22s ease 0.14s, margin-bottom 0.22s ease 0.14s,
+    padding-top 0.22s ease 0.14s, padding-bottom 0.22s ease 0.14s;
 }
-.cart-line.removing { opacity: 0; transform: translateX(60px) scale(0.9); }
+/* Slide out, THEN collapse the gap — otherwise the rows below teleport
+   upward the moment the node is removed. */
+.cart-line.removing {
+  opacity: 0;
+  transform: translateX(60px) scale(0.9);
+  height: 0 !important;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
 .cart-line .p-img { width: 62px; height: 62px; flex: 0 0 62px; border-radius: var(--r-md); font-size: 29px; }
 .cart-line .info { flex: 1; min-width: 0; }
 .cart-line .nm { font-weight: 700; font-size: 13.5px; line-height: 1.25; }
@@ -628,6 +637,10 @@
   position: absolute;
   inset: 0;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  /* sk-shimmer only defines its `to` state, so without this resting
+     transform the highlight starts centred on the bar and snaps back
+     every cycle instead of sweeping in from the left. */
+  transform: translateX(-100%);
   animation: sk-shimmer 1.4s linear infinite;
 }
 
@@ -729,7 +742,8 @@
   justify-content: center;
   font-size: 14px;
   filter: grayscale(1) opacity(0.55);
-  transition: all 0.4s ease;
+  transition: background-color 0.4s ease, border-color 0.4s ease,
+    filter 0.4s ease, box-shadow 0.4s ease, transform 0.4s var(--ease-spring);
   z-index: 1;
 }
 .tl-step.done .tl-dot { filter: none; background: var(--accent-soft); border-color: var(--accent); }
@@ -1297,6 +1311,347 @@
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Checkout — stepper, pickers, Apple Pay sheet, processing
+   ═══════════════════════════════════════════════════════════════ */
+
+.checkout-steps {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  padding: 4px 6px 18px;
+  margin-bottom: 4px;
+}
+.checkout-steps .cs-track {
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  top: 17px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--surface-2);
+  z-index: 0;
+}
+.checkout-steps .cs-track > i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent-grad);
+  transition: width 0.45s var(--ease-out);
+}
+.cs-step {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.cs-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12.5px;
+  font-weight: 800;
+  background: var(--bg-elev);
+  border: 2px solid var(--surface-3);
+  color: var(--text-3);
+  transition: transform 0.3s var(--ease-spring), background 0.3s ease,
+    border-color 0.3s ease, color 0.3s ease;
+}
+.cs-step.done .cs-dot { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.cs-step.current .cs-dot {
+  background: var(--accent-grad);
+  border-color: transparent;
+  color: var(--on-accent);
+  transform: scale(1.14);
+  box-shadow: var(--shadow-accent);
+}
+.cs-label { font-size: 10.5px; font-weight: 700; color: var(--text-3); letter-spacing: 0.02em; }
+.cs-step.current .cs-label { color: var(--text); }
+.cs-step.done .cs-label { color: var(--text-2); }
+
+/* selectable rows (addresses, shipping speeds, payment methods) */
+.pick-list { display: flex; flex-direction: column; gap: 9px; }
+.pick-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 13px 14px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: transform 0.25s var(--ease-spring), border-color 0.2s ease, background 0.2s ease;
+  animation: card-in 0.35s var(--ease-out) backwards;
+}
+.pick-row:active { transform: scale(0.98); transition-duration: 0.08s; }
+.pick-row.selected { border-color: var(--accent); background: var(--accent-soft); }
+.pk-radio {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-3);
+  position: relative;
+  transition: border-color 0.2s ease;
+}
+.pick-row.selected .pk-radio { border-color: var(--accent); }
+.pk-radio::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--accent-grad);
+  transform: scale(0);
+  transition: transform 0.28s var(--ease-spring);
+}
+.pick-row.selected .pk-radio::after { transform: scale(1); }
+.pk-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pk-title { font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.pk-sub { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+.pk-eta {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pk-price { flex: 0 0 auto; font-weight: 800; font-size: 14px; font-variant-numeric: tabular-nums; }
+.pk-price.free { color: var(--green); font-size: 12.5px; letter-spacing: 0.05em; }
+.pk-edit {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+}
+
+/* free-shipping progress nudge */
+.ship-progress {
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.ship-progress.free { border-color: rgba(48, 209, 88, 0.35); background: rgba(48, 209, 88, 0.08); }
+.ship-progress .sp-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+.ship-progress .sp-top b { color: var(--text); }
+.ship-progress .sp-bar { height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.ship-progress .sp-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent-grad);
+  transition: width 0.6s var(--ease-out);
+}
+.ship-progress.free .sp-bar > i { background: linear-gradient(135deg, #63e6a4, var(--green)); }
+
+/* review step */
+.review-items { padding: 6px 14px; border-radius: var(--r-lg); margin-top: 12px; }
+.ri-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.ri-row + .ri-row { border-top: 1px solid var(--border); }
+.ri-row .p-img { width: 46px; height: 46px; flex: 0 0 46px; border-radius: var(--r-sm); font-size: 22px; }
+.ri-info { flex: 1; min-width: 0; }
+.ri-name { font-weight: 700; font-size: 13.5px; line-height: 1.25; }
+.ri-price { font-size: 14px; font-variant-numeric: tabular-nums; }
+
+/* ── Wallet payment sheet (a prop — see cart.js) ─────────────── */
+/* Generic wallet glyph; deliberately not anyone's real logo. */
+.ap-mark {
+  display: inline-block;
+  width: 17px;
+  height: 12px;
+  border-radius: 3px;
+  background: currentColor;
+  position: relative;
+  vertical-align: -1px;
+  margin-right: 2px;
+}
+.ap-mark::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 4px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--bg-elev);
+}
+.ap-mark.big { width: 30px; height: 21px; border-radius: 5px; }
+.ap-mark.big::after { top: 7px; height: 3px; }
+.ap-mark.light { color: var(--on-accent); }
+
+.ap-sheet { padding-bottom: 4px; }
+.ap-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.ap-fake-chip {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(255, 214, 10, 0.12);
+  border: 1px solid rgba(255, 214, 10, 0.3);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.ap-card {
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(135deg, #2a2a33, #16161b 60%, #0e0e12);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-1);
+  margin-bottom: 16px;
+  animation: card-in 0.45s var(--ease-spring) backwards;
+}
+.ap-card-top { display: flex; justify-content: space-between; align-items: baseline; }
+.ap-card-name { font-weight: 800; font-size: 15px; letter-spacing: -0.01em; }
+.ap-card-kind { font-size: 10.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+.ap-card-num {
+  font-family: ui-monospace, monospace;
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  margin: 16px 0 12px;
+  color: var(--text-2);
+}
+.ap-card-bot { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-3); letter-spacing: 0.06em; }
+
+.ap-rows { display: flex; flex-direction: column; gap: 2px; margin-bottom: 18px; }
+.ap-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; font-size: 13.5px; color: var(--text-2); }
+.ap-row b { color: var(--text); font-variant-numeric: tabular-nums; }
+.ap-row.sub { padding-top: 0; }
+
+.ap-confirm { text-align: center; position: relative; padding: 6px 0 18px; }
+.ap-face { width: 76px; height: 76px; margin: 0 auto 10px; position: relative; }
+.ap-face-svg, .ap-check-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: opacity 0.3s ease, transform 0.4s var(--ease-spring);
+}
+.ap-face-svg .ap-eye { fill: var(--text); stroke: none; }
+.ap-check-svg { opacity: 0; transform: scale(0.6); stroke: var(--green); stroke-width: 6; }
+.ap-face.scanning .ap-face-svg { animation: ap-scan 1.2s ease-in-out infinite; }
+@keyframes ap-scan { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.ap-face.done .ap-face-svg { opacity: 0; transform: scale(0.8); }
+.ap-face.done .ap-check-svg { opacity: 1; transform: scale(1); }
+.ap-face.done .ap-check-svg path {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: draw-check 0.45s var(--ease-out) forwards;
+}
+.ap-confirm-label { font-size: 13.5px; font-weight: 700; color: var(--text-2); transition: color 0.25s ease; }
+.ap-confirm-label.ok { color: var(--green); }
+.ap-side-btn {
+  position: absolute;
+  right: -20px;
+  top: 18px;
+  width: 4px;
+  height: 46px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s var(--ease-spring);
+}
+.ap-side-btn.clicked { background: var(--accent); transform: scaleX(1.6); }
+.ap-go { margin-top: 4px; }
+
+/* processing */
+.processing-wrap { text-align: center; padding: 40px 0 26px; position: relative; }
+.proc-rings { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.proc-rings > i {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  top: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  opacity: 0;
+  animation: proc-ring 2.4s ease-out infinite;
+}
+.proc-rings > i:nth-child(2) { animation-delay: 0.8s; }
+.proc-rings > i:nth-child(3) { animation-delay: 1.6s; }
+@keyframes proc-ring {
+  0% { transform: scale(0.7); opacity: 0.55; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.proc-steps { display: flex; flex-direction: column; gap: 10px; margin: 24px auto 0; max-width: 240px; text-align: left; }
+.proc-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-3);
+  transition: color 0.35s ease;
+}
+.proc-step .ps-dot {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-3);
+  position: relative;
+  transition: border-color 0.35s ease, background 0.35s ease;
+}
+.proc-step.done { color: var(--text); }
+.proc-step.done .ps-dot { border-color: var(--green); background: var(--green); }
+.proc-step.done .ps-dot::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  animation: badge-pop 0.3s var(--ease-spring);
+}
+
+/* tracking chips */
+.track-chips { display: flex; flex-wrap: wrap; gap: 7px; margin: -6px 0 14px; }
+.tchip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+.tchip.mono { font-family: ui-monospace, monospace; letter-spacing: 0.04em; }
+.tl-note { font-size: 11.5px; color: var(--accent); margin-top: 3px; }
 
 /* ═══ Portrait lock (landscape phones only) ═══ */
 #rotate-lock {

@@ -54,6 +54,7 @@ DC.app = (() => {
     clearTimeout(skeletonTimer);
 
     // Retrigger the view entrance animation.
+    viewEl.classList.remove("view-leaving");
     viewEl.style.animation = "none";
     void viewEl.offsetHeight;
     viewEl.style.animation = "";
@@ -86,12 +87,20 @@ DC.app = (() => {
     window.scrollTo(0, y);
   };
 
+  /* Play the exit animation, then swap. The .view-leaving rule existed
+     in the stylesheet from the start but nothing ever applied it, so
+     every navigation used to cut straight to the new screen. */
   const onHashChange = () => {
     const next = parseHash();
     const changed = next.name !== current.name || next.params.id !== current.params.id;
     current = next;
-    if (changed) window.scrollTo(0, 0);
-    render(changed);
+    if (!changed) { render(false); return; }
+
+    const viewEl = document.getElementById("view");
+    const swap = () => { window.scrollTo(0, 0); render(true); };
+    if (!viewEl || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { swap(); return; }
+    viewEl.classList.add("view-leaving");
+    setTimeout(swap, 130);                    // just under the 0.16s exit
   };
 
   /* ── Badges (tab bar) ───────────────────────────────────── */
@@ -158,7 +167,7 @@ DC.app = (() => {
       ${list.length
         ? list.map((n, i) => `
           <div class="notif-item ${n.read ? "" : "unread"}" style="animation-delay:${i * 0.04}s">
-            <span class="n-e">${n.emoji}</span>
+            <span class="n-e">${U.esc(n.emoji)}</span>
             <div style="flex:1">
               <div class="n-t">${U.esc(n.title)}</div>
               <div class="n-m">${U.esc(n.msg)}</div>
@@ -170,6 +179,10 @@ DC.app = (() => {
     `);
     list.forEach((n) => { n.read = true; });
     S.save();
+    // The home header's bell dot lives in the view HTML, which
+    // refreshBadges() doesn't touch — clear it directly so it doesn't
+    // keep claiming there's something unread.
+    document.querySelectorAll('[data-action="notifs"] .mini-dot').forEach((d) => d.remove());
     refreshBadges();
   };
 
@@ -193,7 +206,9 @@ DC.app = (() => {
     const flash = D.flashSale();
     UI.modal(`
       <h3 style="text-align:center;margin-bottom:4px">⚡ Flash Sale</h3>
-      <p class="center tiny muted" style="margin-bottom:14px">Ends in <b data-countdown="midnight">--:--:--</b></p>
+      <p class="center tiny muted" style="margin-bottom:14px">
+        Ends in <span class="countdown-pill">⏳ <b data-countdown="midnight">--:--:--</b></span>
+      </p>
       <div style="display:flex;flex-direction:column;gap:10px">
         ${flash.map(UI.productLine).join("")}
       </div>`);
@@ -205,12 +220,15 @@ DC.app = (() => {
     const { id, opts } = D.splitKey(key);
     const p = D.byId(id);
     if (!p) return;
-    S.addToCart(key, qty);
+    const added = S.addToCart(key, qty);
     U.haptic(12);
     DC.sound.play("pop");
     UI.flyToCart(fromEl, p.emoji);
-    S.addXP(3);
-    U.toast("Added to cart", p.name + (opts.length ? ` · ${opts.join(" · ")}` : ""), "🛒", 1800);
+    // XP once per product per day — adding to a cart is free, so paying
+    // every tap made the + button an XP (and cash) printer.
+    if (S.creditCartXP(id)) S.addXP(3);
+    U.toast(added === false ? "Already maxed out" : "Added to cart",
+      p.name + (opts.length ? ` · ${opts.join(" · ")}` : ""), "🛒", 1800);
   };
 
   /* ── Global click delegation ────────────────────────────── */
@@ -222,14 +240,23 @@ DC.app = (() => {
 
     fav: (el, e) => {
       e.stopPropagation();
-      const faved = S.toggleFav(el.dataset.id);
+      const id = el.dataset.id;
+      const faved = S.toggleFav(id);
       U.haptic(faved ? [10, 20, 10] : 8);
-      el.textContent = faved ? "❤️" : "🤍";
-      el.classList.toggle("faved", faved);
+      // The same product can be on screen several times (flash row +
+      // trending + similar items). Keep every heart in sync, not just
+      // the one that was tapped.
+      document.querySelectorAll(`[data-action="fav"][data-id="${CSS.escape(id)}"]`).forEach((b) => {
+        b.textContent = faved ? "❤️" : "🤍";
+        b.classList.toggle("faved", faved);
+      });
       if (faved) {
         DC.sound.play("pluck");
-        S.addXP(5, e.clientX, e.clientY - 30);
-        U.toast("Favorited!", DC.data.byId(el.dataset.id).name, "❤️", 1500);
+        // XP only the FIRST time a product is favorited — otherwise
+        // toggling the heart off and on is an infinite XP (and so cash,
+        // coins and spins) printer. Same rule recordView already uses.
+        if (S.creditFirstFav(id)) S.addXP(5, e.clientX, e.clientY - 30);
+        U.toast("Favorited!", DC.data.byId(id).name, "❤️", 1500);
       }
     },
     "quick-add": (el, e) => {
@@ -251,6 +278,31 @@ DC.app = (() => {
     "apply-coupon": () => DC.views.cart.applyCoupon(),
     checkout: () => { U.haptic(10); DC.views.cart.openCheckout(); },
     "place-order": () => { U.haptic(15); DC.views.cart.placeOrder(); },
+
+    /* multi-step checkout */
+    "checkout-next": () => DC.views.cart.nextStep(),
+    "checkout-back": () => DC.views.cart.prevStep(),
+    "checkout-goto": (el) => DC.views.cart.gotoStep(el.dataset.id),
+    "checkout-back-form": () => DC.views.cart.cancelAddressForm(),
+    "pick-address": (el, e) => {
+      if (e.target.closest('[data-action="edit-address"]')) return;   // Edit wins
+      DC.views.cart.pickAddress(el.dataset.id);
+    },
+    "edit-address": (el, e) => { e.stopPropagation(); DC.views.cart.showAddressForm(el.dataset.id); },
+    "new-address": () => DC.views.cart.showAddressForm(null),
+    "save-address": (el) => DC.views.cart.commitAddress(el.dataset.id),
+    "delete-address": (el) => DC.views.cart.removeAddress(el.dataset.id),
+    "pick-shipping": (el) => DC.views.cart.pickShipping(el.dataset.id),
+    "pick-payment": (el) => DC.views.cart.pickPayment(el.dataset.id),
+    "manage-addresses": () => DC.views.settings.showAddresses(),
+    "settings-pick-address": (el, e) => {
+      if (e.target.closest('[data-action="settings-edit-address"]')) return;
+      DC.views.settings.pickAddress(el.dataset.id);
+    },
+    "settings-edit-address": (el, e) => { e.stopPropagation(); DC.views.settings.editAddress(el.dataset.id); },
+    "settings-new-address": () => DC.views.settings.editAddress(null),
+    "settings-save-address": (el) => DC.views.settings.commitAddress(el.dataset.id),
+    "settings-delete-address": (el) => DC.views.settings.removeAddress(el.dataset.id),
     "track-order": (el) => { UI.closeModal(); go("order", el.dataset.id); },
     "rate-driver": () => { U.haptic([15, 25, 15]); U.confetti({ count: 60 }); U.toast("5 stars sent!", "Your imaginary driver is thrilled", "⭐"); },
 
@@ -286,7 +338,11 @@ DC.app = (() => {
     "search-chip": (el) => DC.views.search.setQuery(el.dataset.id),
 
     notifs: () => openNotifs(),
-    "clear-notifs": () => { S.s.notifs = []; S.save(); UI.closeModal(); refreshBadges(); },
+    "clear-notifs": () => {
+      S.s.notifs = []; S.save(); UI.closeModal();
+      document.querySelectorAll('[data-action="notifs"] .mini-dot').forEach((d) => d.remove());
+      refreshBadges();
+    },
     "flash-sheet": () => openFlashSheet(),
 
     "toggle-sound": () => {
@@ -409,7 +465,11 @@ DC.app = (() => {
     // 5s: deliveries, support tickets + box-ready notification
     setInterval(() => {
       S.sweepDeliveries();
-      S.sweepTickets();
+      const changed = S.sweepTickets();
+      // An open ticket thread shows animated typing dots — repaint it
+      // as soon as the agent actually replies instead of leaving them
+      // spinning until the user backs out and reopens.
+      if (changed) DC.views.settings?.refreshOpenTicket?.();
       if (S.boxReady() && !sessionFlags.boxNotified) {
         sessionFlags.boxNotified = true;
         // Only ping if the box became ready a moment ago (not stale on boot).

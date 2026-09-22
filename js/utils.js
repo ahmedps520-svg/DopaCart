@@ -103,8 +103,10 @@ DC.util = (() => {
 
     const el = document.createElement("div");
     el.className = "toast";
+    // The emoji is escaped too: notification emojis can come from an
+    // imported save file, and an unescaped slot here is a script sink.
     el.innerHTML =
-      `<span class="toast-emoji">${emoji}</span>` +
+      `<span class="toast-emoji">${esc(emoji)}</span>` +
       `<div><div class="toast-title">${esc(title)}</div>` +
       (msg ? `<div class="toast-msg">${esc(msg)}</div>` : "") +
       `</div>`;

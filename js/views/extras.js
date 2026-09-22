@@ -11,11 +11,13 @@ DC.views = DC.views || {};
 DC.views.wrapped = (() => {
   const U = DC.util, D = DC.data, S = DC.store, UI = DC.ui;
 
-  // Count every (non-returned) ordered product, most-bought first.
+  // Count every product actually RECEIVED (delivered, not returned),
+  // most-bought first — the tile says "items received", so an order
+  // still on the fake truck shouldn't be in it.
   const buyCounts = () => {
     const counts = {};
     S.s.orders.forEach((o) => {
-      if (o.returned) return;
+      if (o.returned || S.orderProgress(o).pct < 1) return;
       o.items.forEach((it) => {
         const { id } = D.splitKey(it.key || it.id);
         counts[id] = (counts[id] || 0) + it.qty;
@@ -108,14 +110,10 @@ DC.views.wrapped = (() => {
 DC.views.collection = (() => {
   const U = DC.util, D = DC.data, S = DC.store, UI = DC.ui;
 
-  const ownedIds = () => {
-    const owned = new Set();
-    S.s.orders.forEach((o) => {
-      if (o.returned) return;
-      o.items.forEach((it) => owned.add(D.splitKey(it.key || it.id).id));
-    });
-    return owned;
-  };
+  // Delivered-and-kept only — the page's own caption promises "every
+  // product you've fictionally received", and the hoarder badges use
+  // the same rule (S.ownedIds).
+  const ownedIds = () => S.ownedIds();
 
   const html = () => {
     const owned = ownedIds();
@@ -318,7 +316,10 @@ Answer ONLY with minified JSON: {"reply":string,"category":string|null,"max":num
       const orders = S.s.orders;
       if (!orders.length) return { texts: ["No orders yet! Place one and I'll happily narrate the fake courier's journey. 🛵"] };
       const active = S.activeOrders();
-      const o = orders[0];
+      // Prefer an order that's actually in flight — asking "where's my
+      // order" while a big one is still driving around shouldn't get an
+      // answer about a small one that already landed.
+      const o = active[0] || orders[0];
       const prog = S.orderProgress(o);
       const tail = active.length > 1 ? ` (+${active.length - 1} more in flight)` : "";
       return prog.pct >= 1

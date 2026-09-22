@@ -60,11 +60,13 @@ DC.ui = (() => {
   };
 
   /* ── Product cards ──────────────────────────────────────── */
-  const productCard = (p) => {
+  // `i` drives the entrance stagger (--i in components.css) so long
+  // grids still animate in order rather than restarting every 4 cards.
+  const productCard = (p, i = 0) => {
     const pr = priceOf(p);
     const low = p.stock <= 8;
     return `
-    <article class="prod-card" data-action="open-product" data-id="${p.id}">
+    <article class="prod-card" data-action="open-product" data-id="${p.id}" style="--i:${i}">
       <div class="p-img" style="${gradStyle(p)}">
         ${badgeHtml(p)}${favBtn(p)}
         <span class="p-emoji">${p.emoji}</span>
@@ -111,10 +113,10 @@ DC.ui = (() => {
   };
 
   const row = (products) =>
-    `<div class="prod-row">${products.map(productCard).join("")}</div>`;
+    `<div class="prod-row">${products.map((p, i) => productCard(p, i)).join("")}</div>`;
 
   const grid = (products) =>
-    `<div class="prod-grid">${products.map(productCard).join("")}</div>`;
+    `<div class="prod-grid">${products.map((p, i) => productCard(p, i)).join("")}</div>`;
 
   const section = (title, sub) => `
     <div class="sec">
@@ -145,11 +147,20 @@ DC.ui = (() => {
   /* ── Modals ─────────────────────────────────────────────── */
   const modalRoot = () => document.getElementById("modal-root");
 
+  // Remove THIS backdrop when its exit animation ends — never wipe the
+  // whole root on a timer, because a modal opened inside that 240 ms
+  // window would be destroyed by the previous close's stale timeout.
+  // The closing backdrop also stops taking clicks so a second tap can't
+  // re-fire onDismiss.
   const closeModal = () => {
     const bd = modalRoot().firstElementChild;
-    if (!bd) return;
+    if (!bd || bd.classList.contains("closing")) return;
     bd.classList.add("closing");
-    setTimeout(() => { modalRoot().innerHTML = ""; }, 240);
+    bd.style.pointerEvents = "none";
+    setTimeout(() => {
+      bd.remove();
+      if (!modalRoot().children.length) document.body.classList.remove("modal-open");
+    }, 240);
   };
 
   // kind: "sheet" (bottom) or "dialog" (centered)
@@ -163,10 +174,19 @@ DC.ui = (() => {
       ? `<div class="dialog">${html}</div>`
       : `<div class="sheet"><div class="sheet-grab"></div>${html}</div>`;
     if (dismissable) {
-      bd.addEventListener("click", (e) => { if (e.target === bd) { closeModal(); onDismiss?.(); } });
+      let dismissed = false;                    // one dismiss per backdrop
+      bd.addEventListener("click", (e) => {
+        if (e.target !== bd || dismissed) return;
+        dismissed = true;
+        closeModal();
+        onDismiss?.();
+      });
     }
     modalRoot().innerHTML = "";
     modalRoot().appendChild(bd);
+    // Lock the page behind the sheet so dragging past the end of a
+    // modal doesn't scroll the feed underneath it.
+    document.body.classList.add("modal-open");
     U.haptic(8);
     return bd;
   };
@@ -195,6 +215,10 @@ DC.ui = (() => {
         badge.animate([{ transform: "scale(1.6)" }, { transform: "scale(1)" }],
           { duration: 300, easing: "cubic-bezier(0.34,1.56,0.64,1)" });
       }
+      // The tab itself reacts to the catch, so the item lands with
+      // weight instead of just vanishing into the corner.
+      cartTab.classList.add("bump");
+      setTimeout(() => cartTab.classList.remove("bump"), 520);
     };
   };
 

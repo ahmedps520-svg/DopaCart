@@ -231,9 +231,24 @@ body::before {
   position: relative;
   border-radius: var(--r-md);
   color: var(--text-3);
-  transition: color 0.25s ease, transform 0.15s ease;
+  transition: color 0.25s ease, transform 0.3s var(--ease-spring);
 }
-.tab:active { transform: scale(0.9); }
+.tab:active { transform: scale(0.9); transition-duration: 0.08s; }
+/* The cart tab reacts when a fly-to-cart dot lands in it. */
+.tab.bump .tab-icon { animation: cart-bump 0.5s var(--ease-spring); }
+@keyframes cart-bump {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-6px) scale(1.28) rotate(-9deg); }
+  60% { transform: translateY(1px) scale(0.94) rotate(3deg); }
+  100% { transform: translateY(0) scale(1); }
+}
+.tab.active.bump .tab-icon { animation: cart-bump-active 0.5s var(--ease-spring); }
+@keyframes cart-bump-active {
+  0% { transform: translateY(-2px) scale(1.12); }
+  30% { transform: translateY(-8px) scale(1.38) rotate(-9deg); }
+  60% { transform: translateY(-1px) scale(1.04) rotate(3deg); }
+  100% { transform: translateY(-2px) scale(1.12); }
+}
 .tab .tab-icon {
   font-size: 21px;
   filter: grayscale(1) opacity(0.7);
@@ -250,9 +265,12 @@ body::before {
   height: 3px;
   border-radius: 3px;
   background: var(--accent-grad);
+  transform-origin: center;
   animation: tab-pill 0.35s var(--ease-spring);
 }
-@keyframes tab-pill { from { width: 0; opacity: 0; } to { width: 18px; opacity: 1; } }
+/* scaleX, not width: compositor-only, and the spring's overshoot can
+   actually show (a width keyframe can't overshoot its own end value). */
+@keyframes tab-pill { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
 
 .tab-badge {
   position: absolute;
@@ -302,7 +320,7 @@ body::before {
   position: relative;
   transition: transform 0.15s ease, background 0.2s ease;
 }
-.icon-btn:active { transform: scale(0.88); background: var(--surface-2); }
+.icon-btn:active { transform: scale(0.88); background: var(--surface-2); transition-duration: 0.08s; }
 .icon-btn .mini-dot {
   position: absolute;
   top: 8px;
@@ -315,6 +333,8 @@ body::before {
 }
 
 /* ── Buttons ────────────────────────────────────────────────── */
+/* Press = instant, release = spring back. Split durations are what
+   makes a tap feel physical rather than merely animated. */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -325,11 +345,11 @@ body::before {
   font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.01em;
-  transition: transform 0.15s var(--ease-spring), box-shadow 0.2s ease, opacity 0.2s ease;
+  transition: transform 0.3s var(--ease-spring), box-shadow 0.2s ease, opacity 0.2s ease;
   position: relative;
   overflow: hidden;
 }
-.btn:active { transform: scale(0.96); }
+.btn:active { transform: scale(0.96); transition-duration: 0.08s; }
 .btn[disabled] { opacity: 0.45; pointer-events: none; }
 
 .btn-primary {
@@ -337,14 +357,17 @@ body::before {
   color: var(--on-accent);
   box-shadow: var(--shadow-accent);
 }
-.btn-primary::after {
-  /* moving sheen */
+/* Sheen only on full-width hero CTAs (checkout, claim, collect) — on
+   every primary at once it was constant compositing over blurred glass
+   and the repetition dulled the effect. */
+.btn-primary.btn-block::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.28) 50%, transparent 60%);
   transform: translateX(-120%);
   animation: sheen 3.2s ease-in-out infinite;
+  pointer-events: none;
 }
 @keyframes sheen { 0%, 60% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
 
@@ -381,6 +404,25 @@ body::before {
 }
 .field::placeholder { color: var(--text-3); }
 .field:focus { border-color: var(--accent); background: var(--surface-2); }
+.field + .fld-label { margin-top: 12px; }
+
+.fld-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 12px 0 6px 4px;
+}
+
+/* Negative feedback needs a physical channel, not just a toast. */
+.field.error { animation: shake 0.35s ease; border-color: var(--accent); }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
 
 /* ── Chips ──────────────────────────────────────────────────── */
 .chip-row {
@@ -403,9 +445,12 @@ body::before {
   font-weight: 600;
   color: var(--text-2);
   white-space: nowrap;
-  transition: all 0.22s var(--ease-out);
+  /* explicit list, not `all` — `all` also animates inherited theme
+     variables, which smears when the accent theme changes */
+  transition: transform 0.22s var(--ease-spring), background-color 0.22s ease,
+    color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 }
-.chip:active { transform: scale(0.93); }
+.chip:active { transform: scale(0.93); transition-duration: 0.08s; }
 .chip.active {
   background: var(--accent-grad);
   color: var(--on-accent);
@@ -506,6 +551,8 @@ body::before {
   max-width: var(--app-max);
   max-height: 88dvh;
   overflow-y: auto;
+  /* Don't chain scrolling to the feed behind the sheet. */
+  overscroll-behavior: contain;
   background: rgba(18, 18, 22, 0.92);
   -webkit-backdrop-filter: blur(30px) saturate(160%);
   backdrop-filter: blur(30px) saturate(160%);
@@ -513,11 +560,14 @@ body::before {
   border-bottom: 0;
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   padding: 10px 20px calc(24px + var(--safe-b));
-  animation: sheet-up 0.42s var(--ease-out);
+  animation: sheet-up 0.5s var(--ease-spring);
 }
 .modal-backdrop.closing .sheet { animation: sheet-down 0.25s ease forwards; }
-@keyframes sheet-up { from { transform: translateY(60%); opacity: 0.4; } }
+@keyframes sheet-up { from { transform: translateY(75%); opacity: 0.4; } }
 @keyframes sheet-down { to { transform: translateY(100%); } }
+
+/* Page behind any open modal is frozen. */
+body.modal-open { overflow: hidden; }
 
 .sheet-grab {
   width: 40px;
@@ -540,6 +590,10 @@ body::before {
   box-shadow: var(--shadow-1);
 }
 @keyframes dialog-pop { from { transform: scale(0.8); opacity: 0; } }
+/* Dialogs used to spring in and then just vanish with the backdrop —
+   which read as a glitch after every "Collect" tap. */
+.modal-backdrop.closing .dialog { animation: dialog-out 0.2s ease forwards; }
+@keyframes dialog-out { to { transform: scale(0.88) translateY(8px); opacity: 0; } }
 
 /* ── Splash ─────────────────────────────────────────────────── */
 .splash {
@@ -607,5 +661,14 @@ body::before {
 @keyframes float-y { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  /* iteration-count is the important half: without it every `infinite`
+     keyframe restarts at 0.01ms forever — tens of thousands of
+     iterations a second, burning battery for exactly the people who
+     asked for less motion. */
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -17,7 +17,7 @@ DC.views.orders = (() => {
     <button class="order-card" style="width:100%;text-align:left;animation-delay:${i * 0.06}s"
       data-action="track-order" data-id="${o.id}">
       <div class="oc-top">
-        <span class="oc-id">${o.num}</span>
+        <span class="oc-id">${U.esc(o.num)}</span>
         <span class="oc-status ${done ? "done" : ""}" ${o.returned ? 'style="background:var(--surface-2);color:var(--text-2)"' : ""}>
           ${o.returned ? "↩️ Returned" : done ? (o.unboxed ? "✅ Delivered" : "🎁 Unbox me!") : prog.stage.emoji + " " + prog.stage.label}
         </span>
@@ -62,10 +62,16 @@ DC.views.orders = (() => {
     ${past.length ? `<div class="sec"><div class="sec-title">History</div></div>` + past.map(orderCard).join("") : ""}`;
   };
 
-  // Refresh progress bars while the list is visible.
+  // Refresh progress bars while the list is visible. One extra render
+  // fires after the last active order lands — otherwise activeOrders()
+  // is already 0 on that tick and the list stays frozen at ~99% with a
+  // stale "Live now" card until the user navigates away.
   const mounted = () => {
+    let wasActive = S.activeOrders().length;
     const iv = setInterval(() => {
-      if (S.activeOrders().length) DC.app.softRender?.();
+      const n = S.activeOrders().length;
+      if (n || wasActive) DC.app.softRender?.();
+      wasActive = n;
     }, 4000);
     return () => clearInterval(iv);
   };
@@ -134,6 +140,7 @@ DC.views.track = (() => {
         <div class="tl-body">
           <div class="tl-title">${st.label}</div>
           <div class="tl-time">${current ? "Happening now…" : done ? stamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Upcoming"}</div>
+          ${current && st.note ? `<div class="tl-note">${st.note}</div>` : ""}
         </div>
       </div>`;
     }).join("") + `</div>`;
@@ -150,9 +157,15 @@ DC.views.track = (() => {
     <div class="page-head">
       <button class="icon-btn" data-action="back" aria-label="Back">←</button>
       <div style="flex:1">
-        <div class="page-title" style="font-size:20px">${o.num}</div>
+        <div class="page-title" style="font-size:20px">${U.esc(o.num)}</div>
         <div class="page-sub">${o.items.reduce((a, b) => a + b.qty, 0)} items · ${U.money(o.totals.total)}</div>
       </div>
+    </div>
+
+    <div class="track-chips">
+      <span class="tchip">${U.esc(o.carrier || "DopaExpress")}</span>
+      <span class="tchip mono">${U.esc(o.tracking || "—")}</span>
+      ${o.shippingName ? `<span class="tchip">${U.esc(o.shippingName)}</span>` : ""}
     </div>
 
     <div class="eta-hero">
@@ -169,14 +182,14 @@ DC.views.track = (() => {
     </div>
 
     <div class="driver-card glass">
-      <div class="driver-ava">${o.driver.ava}</div>
+      <div class="driver-ava">${U.esc(o.driver.ava)}</div>
       <div class="driver-info">
-        <div class="driver-name">${o.driver.name}</div>
-        <div class="driver-sub">${VEHICLE_EMOJI[o.driver.vehicle] || "🛵"} ${o.driver.vehicle} · ${o.driver.plate}</div>
+        <div class="driver-name">${U.esc(o.driver.name)}</div>
+        <div class="driver-sub">${VEHICLE_EMOJI[o.driver.vehicle] || "🛵"} ${U.esc(o.driver.vehicle)} · ${U.esc(o.driver.plate)}</div>
       </div>
       <div style="text-align:right">
-        <div class="driver-rating">★ ${o.driverRating.toFixed(1)}</div>
-        <div class="tiny muted">2,4${o.seed % 90 + 10} deliveries</div>
+        <div class="driver-rating">★ ${Number(o.driverRating || 4.8).toFixed(1)}</div>
+        <div class="tiny muted">2,4${Number(o.seed || 0) % 90 + 10} deliveries</div>
       </div>
     </div>
 
@@ -191,8 +204,14 @@ DC.views.track = (() => {
           <div class="s-t">${U.esc(p.name)}<div class="tiny muted">${opts.length ? U.esc(opts.join(" · ")) + " · " : ""}×${it.qty}</div></div>
           <span class="s-v">${U.money(it.price * it.qty)}</span></div>` : "";
       }).join("")}
-      <div class="set-row"><span class="s-e">📍</span><div class="s-t">Delivering to</div>
-        <span class="s-v">${o.address}</span></div>
+      <div class="set-row"><span class="s-e">📍</span>
+        <div class="s-t">Delivering to
+          ${o.addressFull?.name ? `<div class="tiny muted">${U.esc(o.addressFull.name)}${o.addressFull.phone ? " · " + U.esc(o.addressFull.phone) : ""}</div>` : ""}
+          ${o.addressFull?.note ? `<div class="tiny muted">“${U.esc(o.addressFull.note)}”</div>` : ""}
+        </div>
+        <span class="s-v">${U.esc(o.address)}</span></div>
+      <div class="set-row"><span class="s-e">💳</span><div class="s-t">Paid with</div>
+        <span class="s-v">${U.esc(o.paymentName || "DopaPay")}</span></div>
     </div>
     ${done && !o.returned && !o.unboxed ? `
       <div class="spacer"></div>
@@ -241,10 +260,14 @@ DC.views.track = (() => {
       }
     };
 
-    // rAF for the courier, but timeline/ETA only need ~2 fps — throttle inside.
+    // rAF for the courier, but timeline/ETA only need ~2 fps — throttle
+    // inside. Once the order is delivered there is nothing left to
+    // animate, so the loop paints one final frame and stops instead of
+    // recomputing path geometry at 60 fps on a static screen.
     let lastSlow = 0;
     const loop = (t) => {
       const prog = S.orderProgress(o);
+      const finished = prog.pct >= 1;
       const path = document.getElementById("route-progress");
       const courier = document.getElementById("courier");
       if (path && courier) {
@@ -252,14 +275,15 @@ DC.views.track = (() => {
         path.style.strokeDasharray = len;
         path.style.strokeDashoffset = len * (1 - prog.pct);
         const pt = path.getPointAtLength(len * prog.pct);
-        const bob = Math.sin(Date.now() / 260) * 1.6;
+        const bob = finished ? 0 : Math.sin(Date.now() / 260) * 1.6;
         courier.setAttribute("transform", `translate(${pt.x}, ${pt.y + bob})`);
       }
+      if (finished) { paint(); raf = null; return; }        // settle and stop
       if (t - lastSlow > 500) { lastSlow = t; paint(); }
-      if (!wasDone || !document.hidden) raf = requestAnimationFrame(loop);
+      raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => { if (raf) cancelAnimationFrame(raf); };
   };
 
   return { html, mounted };

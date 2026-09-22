@@ -63,6 +63,11 @@ DC.views.settings = (() => {
     </div>
 
     <div class="set-group glass">
+      <button class="set-row" data-action="manage-addresses">
+        <span class="s-e">📍</span><span class="s-t">Delivery Addresses</span>
+        <span class="s-v">${S.addresses().length}</span>
+        <span class="s-arrow">›</span>
+      </button>
       <button class="set-row" data-action="show-returns">
         <span class="s-e">↩️</span><span class="s-t">Returns & Refunds</span>
         <span class="s-v">${S.returnableOrders().length} eligible</span>
@@ -211,6 +216,98 @@ DC.views.settings = (() => {
     </div>
     <button class="btn btn-glass btn-block" data-action="close-modal">Close</button>`);
 
+  /* ── Address book ───────────────────────────────────────── */
+  // Reuses the checkout's address editor so there is exactly one
+  // address form in the app.
+  const showAddresses = () => {
+    const list = S.addresses();
+    const cur = S.currentAddress();
+    UI.modal(`
+      <h3 style="text-align:center;margin-bottom:4px">📍 Delivery addresses</h3>
+      <p class="center tiny muted" style="margin-bottom:14px">Where your fictional parcels are sent. Tap one to make it the default.</p>
+      <div class="pick-list" id="addr-list">
+        ${list.length ? list.map((a) => `
+          <button class="pick-row ${cur && a.id === cur.id ? "selected" : ""}" data-action="settings-pick-address" data-id="${a.id}">
+            <span class="pk-radio"></span>
+            <span class="pk-body">
+              <span class="pk-title">${U.esc(a.name || "Address")}</span>
+              <span class="pk-sub">${U.esc(S.addressLabel(a))}</span>
+              ${a.phone ? `<span class="pk-sub">${U.esc(a.phone)}</span>` : ""}
+            </span>
+            <span class="pk-edit" data-action="settings-edit-address" data-id="${a.id}">Edit</span>
+          </button>`).join("")
+          : `<p class="tiny muted center" style="padding:14px">No addresses saved yet.</p>`}
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-glass btn-block" data-action="settings-new-address">＋ Add a new address</button>
+      <div style="height:8px"></div>
+      <button class="btn btn-ghost btn-block" data-action="close-modal">Done</button>`);
+  };
+
+  const pickAddress = (id) => {
+    S.selectAddress(id);
+    U.haptic(8);
+    DC.sound.play("pluck");
+    showAddresses();
+  };
+
+  const editAddress = (id) => {
+    const a = id ? S.addresses().find((x) => x.id === id) : null;
+    UI.modal(`
+      <h3 style="text-align:center;margin-bottom:4px">${a ? "Edit address" : "New address"}</h3>
+      <p class="center tiny muted" style="margin-bottom:14px">Fictional deliveries only — put whatever you like here.</p>
+      <label class="fld-label">Full name</label>
+      <input class="field" id="sa-name" maxlength="40" placeholder="Your name" value="${a ? U.esc(a.name || "") : ""}">
+      <label class="fld-label">Street address</label>
+      <input class="field" id="sa-line1" maxlength="60" placeholder="123 Imaginary Street" value="${a ? U.esc(a.line1 || "") : ""}">
+      <label class="fld-label">District</label>
+      <input class="field" id="sa-district" maxlength="40" placeholder="Al Olaya" value="${a ? U.esc(a.district || "") : ""}">
+      <label class="fld-label">City</label>
+      <select class="field" id="sa-city">
+        ${S.CITIES.map((c) => `<option value="${c}" ${a && a.city === c ? "selected" : ""}>${c}</option>`).join("")}
+      </select>
+      <label class="fld-label">Phone</label>
+      <input class="field" id="sa-phone" maxlength="20" inputmode="tel" placeholder="05X XXX XXXX" value="${a ? U.esc(a.phone || "") : ""}">
+      <label class="fld-label">Delivery note (optional)</label>
+      <input class="field" id="sa-note" maxlength="60" placeholder="Leave at the door" value="${a ? U.esc(a.note || "") : ""}">
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-block" data-action="settings-save-address" data-id="${a ? a.id : ""}">${a ? "Save changes" : "Add address"}</button>
+      ${a ? `<div style="height:8px"></div>
+        <button class="btn btn-danger btn-block" data-action="settings-delete-address" data-id="${a.id}">Delete</button>` : ""}
+      <div style="height:8px"></div>
+      <button class="btn btn-ghost btn-block" data-action="manage-addresses">Cancel</button>`);
+  };
+
+  const commitAddress = (id) => {
+    const val = (elId) => (document.getElementById(elId)?.value || "").trim();
+    const line1 = val("sa-line1");
+    if (!line1) {
+      const el = document.getElementById("sa-line1");
+      el?.classList.remove("error"); void el?.offsetWidth; el?.classList.add("error");
+      U.toast("Street address needed", "Even fictional parcels need a street", "📍");
+      return;
+    }
+    S.saveAddress({
+      name: val("sa-name") || "You",
+      line1,
+      district: val("sa-district"),
+      city: val("sa-city") || S.CITIES[0],
+      phone: val("sa-phone"),
+      note: val("sa-note"),
+    }, id || undefined);
+    U.haptic([12, 20, 12]);
+    DC.sound.play("zip");
+    U.toast(id ? "Address updated" : "Address added", "", "📍");
+    showAddresses();
+  };
+
+  const removeAddress = (id) => {
+    S.deleteAddress(id);
+    U.haptic(10);
+    U.toast("Address deleted", "", "🗑️");
+    showAddresses();
+  };
+
   /* ── Support: returns + complaints ──────────────────────── */
   const showReturns = () => {
     const eligible = S.returnableOrders();
@@ -222,7 +319,7 @@ DC.views.settings = (() => {
           <div class="notif-item" style="animation-delay:${i * 0.05}s">
             <span class="n-e">📦</span>
             <div style="flex:1">
-              <div class="n-t">${o.num}</div>
+              <div class="n-t">${U.esc(o.num)}</div>
               <div class="n-m">${o.items.reduce((a, b) => a + b.qty, 0)} items · ${U.money(o.totals.total)}</div>
               <div class="n-time">Delivered ${U.timeAgo(o.createdAt + o.duration)}</div>
             </div>
@@ -237,10 +334,12 @@ DC.views.settings = (() => {
     if (!o) return;
     UI.modal(`
       <div class="reward-burst">↩️</div>
-      <h3 style="margin:8px 0 6px">Return ${o.num}?</h3>
+      <h3 style="margin:8px 0 6px">Return ${U.esc(o.num)}?</h3>
       <p class="muted" style="font-size:13.5px;margin-bottom:16px">
         ${U.money(o.totals.total)} goes straight back to your DopaCash.<br>
-        The imaginary courier will pretend to pick it up.
+        ${o.rewards?.cashback || o.rewards?.coins
+          ? `The rewards this order paid (${U.money(o.rewards.cashback || 0)}${o.rewards.coins ? " · " + o.rewards.coins + " coins" : ""}) are reversed with it.`
+          : "The imaginary courier will pretend to pick it up."}
       </p>
       <button class="btn btn-primary btn-block" data-action="confirm-return" data-id="${o.id}">Refund me · ${U.money(o.totals.total)}</button>
       <div style="height:8px"></div>
@@ -271,7 +370,7 @@ DC.views.settings = (() => {
         <div class="tiny muted" style="margin:10px 0 5px 4px">Attach an order (optional)</div>
         <select class="field" id="complaint-order">
           <option value="">No specific order</option>
-          ${recent.map((o) => `<option value="${o.id}">${o.num} · ${U.money(o.totals.total)}</option>`).join("")}
+          ${recent.map((o) => `<option value="${U.esc(o.id)}">${U.esc(o.num)} · ${U.money(o.totals.total)}</option>`).join("")}
         </select>` : ""}
       <textarea class="field" id="complaint-text" rows="4" maxlength="500"
         placeholder="Tell us everything. The courier looked at you funny? We're on it." style="resize:none;margin-top:10px"></textarea>
@@ -315,42 +414,71 @@ DC.views.settings = (() => {
       ${list.length ? list.map((t, i) => `
         <button class="notif-item" style="width:100%;text-align:left;animation-delay:${i * 0.04}s"
           data-action="open-ticket" data-id="${t.id}">
-          <span class="n-e">${t.agent.ava}</span>
+          <span class="n-e">${U.esc(t.agent.ava)}</span>
           <div style="flex:1;min-width:0">
-            <div class="n-t">${t.num} · ${t.topic}</div>
+            <div class="n-t">${U.esc(t.num)} · ${U.esc(t.topic)}</div>
             <div class="n-m" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${U.esc(t.text)}</div>
             <div class="n-time">${U.timeAgo(t.createdAt)} · ${t.thread.length} message${t.thread.length === 1 ? "" : "s"}</div>
           </div>
-          <span class="ticket-status" style="color:${STATUS[t.status].color}">${STATUS[t.status].label}</span>
+          <span class="ticket-status" style="color:${(STATUS[t.status] || STATUS.open).color}">${(STATUS[t.status] || STATUS.open).label}</span>
         </button>`).join("")
         : `<div class="empty-state" style="padding:26px"><div class="emoji">🎫</div><h3>No tickets yet</h3><p>Nothing has gone fictionally wrong. Yet.</p></div>`}
       <div class="spacer"></div>
       <button class="btn btn-primary btn-block" data-action="show-complaint">📮 File a new complaint</button>`);
   };
 
+  // The ticket currently on screen — sweepTickets re-renders it live so
+  // the typing dots don't keep spinning after the agent has answered.
+  let openTicketId = null;
+
+  const ticketBodyHtml = (t, order) => {
+    const st = STATUS[t.status] || STATUS.open;
+    return `
+      <h3 style="text-align:center;margin-bottom:2px">${U.esc(t.num)}</h3>
+      <p class="center tiny muted" style="margin-bottom:12px">
+        ${U.esc(t.topic)} · <b style="color:${st.color}">${st.label}</b> · agent ${U.esc(t.agent.ava)} ${U.esc(t.agent.name)}
+        ${order ? `<br>Regarding order ${U.esc(order.num)} · ${U.money(order.totals.total)}` : ""}
+      </p>
+      <div class="bot-chat" id="ticket-thread" style="max-height:46vh;overflow-y:auto">
+        ${t.thread.map((m) => m.who === "you"
+          ? `<div class="bot-msg me"><span class="bot-bubble">${U.esc(m.text)}</span></div>`
+          : `<div class="bot-msg bot"><span class="bot-ava">${U.esc(t.agent.ava)}</span><span class="bot-bubble">${U.esc(m.text)}</span></div>`).join("")}
+        ${t.status !== "resolved" ? `<div class="bot-msg bot"><span class="bot-ava">${U.esc(t.agent.ava)}</span><span class="bot-bubble"><span class="typing-dots"><i></i><i></i><i></i></span></span></div>` : ""}
+      </div>
+      ${t.comp ? `<p class="center tiny" style="color:var(--green);font-weight:700;margin-top:10px">🎁 Goodwill applied: ${U.esc(t.comp.label)}</p>` : ""}
+      <div class="bot-input-row" style="margin-top:12px">
+        <input class="field" id="ticket-reply" placeholder="Reply to ${U.esc(t.agent.name)}…" autocomplete="off">
+        <button class="btn btn-primary bot-send" data-action="send-ticket-reply" data-id="${U.esc(t.id)}" aria-label="Send">➤</button>
+      </div>
+      <div style="height:8px"></div>
+      <button class="btn btn-glass btn-block" data-action="show-tickets">← All tickets</button>`;
+  };
+
   const showTicket = (id) => {
     const t = S.ticketByNum(id);
     if (!t) return;
+    openTicketId = id;
     const order = t.orderId ? S.s.orders.find((o) => o.id === t.orderId) : null;
-    UI.modal(`
-      <h3 style="text-align:center;margin-bottom:2px">${t.num}</h3>
-      <p class="center tiny muted" style="margin-bottom:12px">
-        ${t.topic} · <b style="color:${STATUS[t.status].color}">${STATUS[t.status].label}</b> · agent ${t.agent.ava} ${t.agent.name}
-        ${order ? `<br>Regarding order ${order.num} · ${U.money(order.totals.total)}` : ""}
-      </p>
-      <div class="bot-chat" style="max-height:46vh;overflow-y:auto">
-        ${t.thread.map((m) => m.who === "you"
-          ? `<div class="bot-msg me"><span class="bot-bubble">${U.esc(m.text)}</span></div>`
-          : `<div class="bot-msg bot"><span class="bot-ava">${t.agent.ava}</span><span class="bot-bubble">${U.esc(m.text)}</span></div>`).join("")}
-        ${t.status !== "resolved" ? `<div class="bot-msg bot"><span class="bot-ava">${t.agent.ava}</span><span class="bot-bubble"><span class="typing-dots"><i></i><i></i><i></i></span></span></div>` : ""}
-      </div>
-      ${t.comp ? `<p class="center tiny" style="color:var(--green);font-weight:700;margin-top:10px">🎁 Goodwill applied: ${t.comp.label}</p>` : ""}
-      <div class="bot-input-row" style="margin-top:12px">
-        <input class="field" id="ticket-reply" placeholder="Reply to ${t.agent.name}…" autocomplete="off">
-        <button class="btn btn-primary bot-send" data-action="send-ticket-reply" data-id="${t.id}" aria-label="Send">➤</button>
-      </div>
-      <div style="height:8px"></div>
-      <button class="btn btn-glass btn-block" data-action="show-tickets">← All tickets</button>`);
+    UI.modal(ticketBodyHtml(t, order));
+  };
+
+  /* Called by the app ticker after sweepTickets advances a ticket: if
+     that ticket's thread is the open sheet, repaint it in place so the
+     agent's reply appears while the user is reading. */
+  const refreshOpenTicket = (id) => {
+    if (!openTicketId || (id && id !== openTicketId)) return;
+    const sheet = document.querySelector(".modal-backdrop:not(.closing) .sheet");
+    const thread = document.getElementById("ticket-thread");
+    if (!sheet || !thread) { openTicketId = null; return; }
+    const t = S.ticketByNum(openTicketId);
+    if (!t) { openTicketId = null; return; }
+    const draft = document.getElementById("ticket-reply")?.value || "";
+    const order = t.orderId ? S.s.orders.find((o) => o.id === t.orderId) : null;
+    sheet.innerHTML = `<div class="sheet-grab"></div>` + ticketBodyHtml(t, order);
+    const input = document.getElementById("ticket-reply");
+    if (input && draft) input.value = draft;                 // keep what they were typing
+    const box = document.getElementById("ticket-thread");
+    if (box) box.scrollTop = box.scrollHeight;
   };
 
   const sendTicketReply = (id) => {
@@ -468,8 +596,9 @@ DC.views.settings = (() => {
   return {
     html, setTheme, buyTheme,
     showAbout, showChangelog, showPrivacy, showCredits,
+    showAddresses, pickAddress, editAddress, commitAddress, removeAddress,
     showReturns, doReturn, confirmReturn, showComplaint, submitComplaint,
-    showTickets, showTicket, sendTicketReply,
+    showTickets, showTicket, sendTicketReply, refreshOpenTicket,
     exportData, importData, clearData, confirmClear, enableNotifs, checkUpdates,
   };
 })();

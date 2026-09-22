@@ -244,12 +244,25 @@ DC.views.rewards = (() => {
   const finishSpin = (idx) => {
     if (!pendingSpin) return;          // already finished (skip vs timer race)
     clearTimeout(pendingSpin.timeout);
+    const alreadyPaid = pendingSpin.paid;
     pendingSpin = null;
     spinning = false;
     document.getElementById("skip-spin-btn")?.setAttribute("hidden", "");
     const seg = SEGMENTS[idx];
     const reward = segReward(seg);
-    reward.apply();
+    // The payout already happened at spin time (so closing the app
+    // mid-animation can't eat it) — only apply here if it somehow
+    // didn't.
+    if (!alreadyPaid) reward.apply();
+
+    // Ratchet rock-back: a cubic-bezier capped at 1 can't overshoot, so
+    // the wheel dead-stops. This sells the pointer clicking into place.
+    const wheel = document.getElementById("spin-wheel");
+    wheel?.animate([
+      { transform: `rotate(${wheelRotation}deg)` },
+      { transform: `rotate(${wheelRotation - 4.5}deg)` },
+      { transform: `rotate(${wheelRotation}deg)` },
+    ], { duration: 380, easing: "ease-in-out" });
     // Reset the button here too — the modal's Collect re-render isn't
     // guaranteed (the user can dismiss by tapping the backdrop).
     const sb = document.getElementById("spin-btn");
@@ -287,7 +300,11 @@ DC.views.rewards = (() => {
     const sb = document.getElementById("spin-btn");
     if (sb) { sb.disabled = true; sb.textContent = "Spinning…"; }
 
-    pendingSpin = { idx, timeout: setTimeout(() => finishSpin(idx), SPIN_MS) };
+    // Pay out NOW, in the same step that consumed the spin. The
+    // animation only reveals what already happened — otherwise closing
+    // the app during the 2.6 s spin eats the token and the prize.
+    segReward(SEGMENTS[idx]).apply();
+    pendingSpin = { idx, paid: true, timeout: setTimeout(() => finishSpin(idx), SPIN_MS) };
   };
 
   /* Resolve every available spin at once, then show one aggregate haul.
@@ -410,11 +427,15 @@ DC.views.rewards = (() => {
     DC.sound.play("shimmer");          // magical rise, distinct from the spin win
     if (el) { el.classList.remove("ready"); el.classList.add("opening"); }
 
+    // Roll and pay immediately: openBox() already started the 4-hour
+    // cooldown, so a reload during the 750 ms reveal must not be able
+    // to swallow the prize.
+    const totalW = BOX_REWARDS.reduce((a, r) => a + r.weight, 0);
+    let roll = Math.random() * totalW, reward = BOX_REWARDS[0];
+    for (const r of BOX_REWARDS) { roll -= r.weight; if (roll <= 0) { reward = r; break; } }
+    const got = reward.gen();
+
     setTimeout(() => {
-      const totalW = BOX_REWARDS.reduce((a, r) => a + r.weight, 0);
-      let roll = Math.random() * totalW, reward = BOX_REWARDS[0];
-      for (const r of BOX_REWARDS) { roll -= r.weight; if (roll <= 0) { reward = r; break; } }
-      const got = reward.gen();
       U.confetti({ count: 110 });
       UI.modal(`
         <div class="reward-burst">${got.e}</div>
